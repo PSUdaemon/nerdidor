@@ -2,7 +2,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: May 22, 2010
+//  Version: June 4, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,18 +26,17 @@
 #include "WProgram.h"
 
 // config layout
-#define CONFIG_RFBEE_MARKER 0  // Marker
-#define CONFIG_HW_VERSION   1  // Hardware version  
-#define CONFIG_FW_VERSION   2  // Firmware version
-#define CONFIG_DEST_ADDR    3  // Receiver address
-#define CONFIG_MY_ADDR      4  // Sender address
-#define CONFIG_ADDR_CHECK   5  // Address checking
-#define CONFIG_TX_THRESHOLD 6  // Transmit threshold
-#define CONFIG_DATARATE     7  // RF data rate
-#define CONFIG_BDINDEX      8  // Index to baudrate
-#define CONFIG_PAINDEX      9  // Index to PowerAmplifier
-#define CONFIG_CONFIG_ID    10 // Selected CCx configuration
-#define CONFIG_STATUS       11 // SSI and LQI enable or not. -Add by Icing
+#define CONFIG_RFBEE_MARKER       0  // Marker
+#define CONFIG_HW_VERSION         1  // Hardware version  
+#define CONFIG_FW_VERSION         2  // Firmware version
+#define CONFIG_DEST_ADDR          3  // Receiver address
+#define CONFIG_MY_ADDR            4  // Sender address
+#define CONFIG_ADDR_CHECK         5  // Address checking
+#define CONFIG_TX_THRESHOLD       6  // Transmit threshold
+#define CONFIG_BDINDEX            7  // Index to baudrate
+#define CONFIG_PAINDEX            8  // Index to PowerAmplifier
+#define CONFIG_CONFIG_ID          9 // Selected CCx configuration
+#define CONFIG_RETURN_STATUS_BYTE 10 // return RSSI or not. -Added by Icing
 
 // marker
 #define CONFIG_RFBEE_MARKER_VALUE 0xAB

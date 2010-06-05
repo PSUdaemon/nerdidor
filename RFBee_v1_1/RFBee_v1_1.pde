@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: May 22, 2010
+//  Version: June 4, 2010
 //
 //  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 //  as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -56,18 +56,14 @@ void loop(){
   // CCx_MCSM1 is configured to have TX and RX return to IDLE on completion or timeout
   // so we need to explicitly enable RX mode.
   if ((rfBeeMode == RECEIVE_MODE) || (rfBeeMode == TRANSCEIVE_MODE))
-    if (serialMode!=SERIALCMDMODE)
+    if (serialMode != SERIALCMDMODE)
       CCx.Strobe(CCx_SRX);  
     
   if (Serial.available() > 0){
-    //delay(5);//wait for enough data. Added by Icing
-    //Serial.println("data");
-    if (serialMode == SERIALCMDMODE){
-        //Serial.println("command process");
-        readSerialCmd();
-    }
+    if (serialMode == SERIALCMDMODE)
+      readSerialCmd();
     else
-        readSerialData();
+      readSerialData();
   }
 #ifdef USE_INTERRUPT_RECEIVE   
   if (state==RECV_WAITING)
@@ -101,7 +97,7 @@ void rfBeeInit(){
 
 void ISRVreceiveData(){
   DEBUGPRINT()
-    
+  
   if (state != IDLE)
     state=RECV_WAITING;
   else
@@ -139,6 +135,7 @@ byte txFifoFree(){
 void transmitData(byte *serialData,byte len, byte srcAddress, byte destAddress){
   DEBUGPRINT()
   byte stat;
+  
 #ifdef USE_INTERRUPT_RECEIVE
   state=TRANSMIT;
 #endif
@@ -172,8 +169,7 @@ void receiveData(){
   byte rfData[CCx_PACKT_LEN];
   
   byte stat=CCx.Read(CCx_RXBYTES,&size);
-  byte statusByte = (Config.get(CONFIG_STATUS))<<1;// 0 or 2,used in the receiveData(). -Add by Icing
-  
+    
   DEBUGPRINT(size)
   //packet format: payloadLen + dstAddr+ srcAddr +data + (RSSI + LQI)->optional
   //               1byte        1byte     1byte   nbyte  (1byte  1byte)
@@ -184,20 +180,19 @@ void receiveData(){
     CCx.ReadBurst(CCx_RXFIFO, rfData, size);
   else
     Serial.println("Error: Received invalid RF data size");
-  
-  // playloadLen should = total len - 3
-  if(rfData[0] == (size - 1 - statusByte)){
+  // if the RSSI and LQI byte are present we need to subtract them from the length
+  if (Config.get(CONFIG_RETURN_STATUS_BYTE) == 1)
+    size -= 2;
+  // playloadLen should be total size - 1
+  if(rfData[0] == (size - 1)){
         // write dstAddr + srcAddr + data 
-        Serial.write(&rfData[0], size-statusByte); 
+        Serial.write(&rfData[0], size); 
         // write the decoded RSSI value
-        if(2 == statusByte)
-          Serial.print(byte(CCx.RSSIdecode(rfData[size-2])));
+        if( Config.get(CONFIG_RETURN_STATUS_BYTE) == 1 ) 
+          Serial.print(byte(CCx.RSSIdecode(rfData[size])));
    }
    else{
      Serial.println("Error: Received invalid RF data");
-     /*Serial.println(size,DEC);
-     Serial.println(rfData[0],DEC);
-     Serial.println(statusByte,DEC);*/
    }
    // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
    if ((stat & 0xF0) == 0x60)//Modified by Icing. When overflows, STATE[2:0] = 110 
@@ -218,6 +213,6 @@ void loadSettings(){
   // and restore the config settings
   CCx.Write(CCx_ADDR, Config.get(CONFIG_MY_ADDR));
   //CCx.Write(CCx_PKTCTRL1, (Config.get(CONFIG_ADDR_CHECK) | 0x04 ));
-  CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | ((Config.get(CONFIG_STATUS))<<2));
+  CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | ((Config.get(CONFIG_RETURN_STATUS_BYTE))<<2));
   CCx.setPA(cfg,Config.get(CONFIG_PAINDEX));
 }

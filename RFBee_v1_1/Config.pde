@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: May 22, 2010
+//  Version: June 4, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -39,13 +39,12 @@ void CONFIG::reset()
     EEPROM.write(CONFIG_MY_ADDR,65);//'A'
     EEPROM.write(CONFIG_ADDR_CHECK,0x00);
     EEPROM.write(CONFIG_TX_THRESHOLD,0x04);
-    EEPROM.write(CONFIG_DATARATE,0x00);
     EEPROM.write(CONFIG_BDINDEX,0x00);
     EEPROM.write(CONFIG_PAINDEX,0x07);
     EEPROM.write(CONFIG_CONFIG_ID,0x00);
     if (EEPROM.read(CONFIG_HW_VERSION) < 10)
           EEPROM.write(CONFIG_HW_VERSION,10);  // dirty hack to ensure rfBee's without a hardware version get their hardware version set to 1.0
-    EEPROM.write(CONFIG_STATUS,0x00);//disable RSSI and LQI bytes
+    EEPROM.write(CONFIG_RETURN_STATUS_BYTE,0x00);//disable RSSI and LQI bytes
     
     /*Serial.print(EEPROM.read(CONFIG_RFBEE_MARKER),HEX);
     Serial.print(" ");

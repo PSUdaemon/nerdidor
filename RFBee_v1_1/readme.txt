@@ -73,18 +73,10 @@ Add some changes:
 www.seeedstudio.com
 ****************************************************************************
 
-Main feature:
-1. More clear and extenable code structure.
-2. More free RAM space for user applications.
-
 Add some changes:
 1. Add ATSI* command to control if adding RSSI byte or not. ATSI0 disable RSSI, ATSI1 enable RSSI.
 2. Modify the readSerialData(),so that the RFBee can properly transmit the last buffer data before entering command mode.
 3. Default dest and source address are both set as 'A'(0x65).
-
-Still existing problems:
-Command ATDR1 for RF datarate 1200bps and ATCF1(2,3) do not work properly.
-  
 
 2010/6/1 Icing
 www.seeedstudio.com

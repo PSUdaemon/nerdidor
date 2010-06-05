@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: May 22, 2010
+//  Version: June 4, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,43 +25,37 @@
 
 void readSerialCmd(){
   DEBUGPRINT()  
-  char data[2];
-  int result=ERR;
+  int result;
+  char data;
+  static byte pos=0;
   
 #ifdef USE_INTERRUPT_RECEIVE   
-        state=COMMAND;
-#endif 
-    
-  // need at least 4 chars to continue
-  if (Serial.available() < 4)
-    delay(SERIALCMDDELAY); // wait a while for data to arrive
-    
-  if (Serial.available() >= 4){
-    // read the AT
-    data[0]=Serial.read();
-    data[1]=Serial.read();
-    if (strncmp("AT",data,2)==0){
-      // read the command
-      data[0]=Serial.read();
-      data[1]=Serial.read();
-      for(int i=0;i<=sizeof(atCommands);i++){
-        // do we have a known command
-        if (strncmp(atCommands[i].name,data,2)==0){
-          // call the command function
-          result=atCommands[i].function();
-          break;
-        }
+  state=COMMAND;
+#endif  
+ 
+  while(Serial.available()){
+    result=NOTHING;
+    data=Serial.read();
+    serialData[pos++]=data; //serialData is our global serial buffer
+    if (data == SERIALCMDTERMINATOR){
+      if (pos > 3){ // we need 4 bytes
+        result=processSerialCmd(pos);
       }
+      else
+        result=ERR;
+      pos=0;
     }
+    // check if we don't overrun the buffer, if so empty it
+    if (pos > BUFFLEN){
+      result=ERR;
+      pos=0;
+    }
+    if (result == OK)
+        Serial.println("ok");
+    if (result == ERR)
+        Serial.println("error");
   }
   
-  if (result == OK)
-    Serial.println("ok");
-  if (result == ERR)
-    Serial.println("error");
-    
-  Serial.flush();
-  //serialMode=SERIALDATAMODE;// swith to data mode again
 #ifdef USE_INTERRUPT_RECEIVE   
   // did we miss a receive interrupt ?
   if (state==RECV_WAITING)
@@ -69,7 +63,22 @@ void readSerialCmd(){
   else
     state==IDLE; 
 #endif 
+}
 
+int processSerialCmd(byte size){
+  DEBUGPRINT()  
+  // read the AT
+  if (strncasecmp("AT",(char *)serialData,2)==0){
+    // read the command
+    for(int i=0;i<=sizeof(atCommands);i++){
+      // do we have a known command
+      if (strncasecmp(atCommands[i].name,(char *) serialData+2,2)==0){
+        // call the command function
+        return(atCommands[i].function());  // return the result of the execution of the function linked to the command
+      }
+    }
+  }
+  return ERR;
 }
 
 void readSerialData(){
@@ -77,7 +86,7 @@ void readSerialData(){
   byte len;
   byte data;
   byte fifoSize=0;
-  static int plus=0;
+  static byte plus=0;
   static byte pos=0;
  
   // insert any plusses from last round
@@ -89,12 +98,11 @@ void readSerialData(){
   
   // check how much space we have in the TX fifo
   fifoSize=txFifoFree();// the fifoSize should be the number of bytes in TX FIFO
-  //Serial.println(fifoSize,DEC);
   if (len > fifoSize)  len=fifoSize;  // don't overflow the TX fifo
   
-  for(int i=plus+pos; i< len;i++){
+  for(byte i=plus+pos; i< len;i++){
     data=Serial.read();
-    serialData[i]=data;
+    serialData[i]=data;  //serialData is our global serial buffer
     if (data == '+')
       plus++;
     else
@@ -105,13 +113,10 @@ void readSerialData(){
       plus=0;
       serialMode=SERIALCMDMODE;
       CCx.Strobe(CCx_SIDLE); 
-      Serial.println("ok");
-      //Serial.println(len,DEC);
+      Serial.println("ok, starting cmd mode");
       break;  // jump out of the loop, but still send the remaining chars in the buffer 
     }
   }
-  
-
   
   if (plus > 0)  // save any trailing plusses for the next round
     len-=plus;
@@ -135,16 +140,17 @@ void readSerialData(){
 int DA_command(){
   DEBUGPRINT()
   int destAddr;
-  if (Serial.available()){
-    if (getParamData(&destAddr,3) == OK)
-      if (destAddr < 256){
-        Config.set(CONFIG_DEST_ADDR,destAddr);
-        return OK;
-      }
+  
+  byte result=getParamData(&destAddr,3);
+  if (result == OK){
+    if (destAddr < 256){
+      Config.set(CONFIG_DEST_ADDR,destAddr);
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(Config.get(CONFIG_DEST_ADDR)); 
+    Serial.println(Config.get(CONFIG_DEST_ADDR),DEC); 
     return(OK); 
   }
   return ERR;
@@ -153,17 +159,18 @@ int DA_command(){
 int MA_command(){
   DEBUGPRINT()
   int myAddr;
-  if (Serial.available()){
-    if (getParamData(&myAddr,3) == OK)
-      if (myAddr < 256){
-        CCx.Write(CCx_ADDR,myAddr);
-        Config.set(CONFIG_MY_ADDR,myAddr);
-        return OK;
-      }
+  
+  byte result=getParamData(&myAddr,3);
+  if (result == OK){
+    if (myAddr < 256){
+      CCx.Write(CCx_ADDR,myAddr);
+      Config.set(CONFIG_MY_ADDR,myAddr);
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(Config.get(CONFIG_MY_ADDR)); 
+    Serial.println(Config.get(CONFIG_MY_ADDR),DEC); 
     return(OK); 
   }
   return ERR;
@@ -172,17 +179,18 @@ int MA_command(){
 int AC_command(){
   DEBUGPRINT()
   int addrCheck;
-  if (Serial.available()){
-    if (getParamData(&addrCheck,1) == OK)
-      if (addrCheck < 3){
-        CCx.Write(CCx_PKTCTRL1, (addrCheck | ((Config.get(CONFIG_STATUS))<<2) ));
-        Config.set(CONFIG_ADDR_CHECK,addrCheck);
-        return OK;
-      }
+  
+  byte result=getParamData(&addrCheck,1);
+  if (result == OK){
+    if (addrCheck < 3){
+      CCx.Write(CCx_PKTCTRL1, (addrCheck | ((Config.get(CONFIG_RETURN_STATUS_BYTE))<<2) ));
+      Config.set(CONFIG_ADDR_CHECK,addrCheck);
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(Config.get(CONFIG_ADDR_CHECK)); 
+    Serial.println(Config.get(CONFIG_ADDR_CHECK),DEC); 
     return(OK); 
   }
   return ERR;
@@ -192,18 +200,19 @@ int PA_command(){
   DEBUGPRINT()
   int paIndex;
   byte cfg;
-  if (Serial.available()){
-    if (getParamData(&paIndex,1) == OK)
-      if (paIndex < CCx_PA_TABLESIZE){
-        cfg=Config.get(CONFIG_CONFIG_ID);
-        CCx.setPA(cfg, (byte)paIndex);
-        Config.set(CONFIG_PAINDEX ,paIndex);
-        return OK;
-      }
+  
+  byte result=getParamData(&paIndex,1);
+  if (result == OK){
+    if (paIndex < CCx_PA_TABLESIZE){
+      cfg=Config.get(CONFIG_CONFIG_ID);
+      CCx.setPA(cfg, (byte)paIndex);
+      Config.set(CONFIG_PAINDEX ,paIndex);
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(Config.get(CONFIG_PAINDEX)); 
+    Serial.println(Config.get(CONFIG_PAINDEX),DEC); 
     return(OK); 
   }
   return ERR;
@@ -212,68 +221,17 @@ int PA_command(){
 int TH_command(){
   DEBUGPRINT()
   int threshold;
-  if (Serial.available()){
-    if (getParamData(&threshold,2) == OK)
-      if (threshold < 33 ){
-        Config.set(CONFIG_TX_THRESHOLD, threshold);
-        return OK;
-      }
-  }
-  else{
-    // return current setting
-    Serial.println(Config.get(CONFIG_TX_THRESHOLD)); 
-    return(OK); 
-  }
-  return ERR;
-}
 
-int DR_command(){
-  int dataRate;
-  byte cfg, newcfg;
-  if (Serial.available()){
-    if (getParamData(&dataRate,1) == OK)
-      if (dataRate < sizeof(dataRateTable) ){
-        cfg=Config.get(CONFIG_CONFIG_ID);
-        if (dataRate == 0){
-          switch(cfg){
-            case 0:
-            case 1:
-              newcfg=0;
-              break;
-            case 2:
-            case 3:
-              newcfg=2;
-              break;
-            default:
-              return ERR;
-          }
-        }
-        else {
-          switch(cfg){
-            case 0:
-            case 1:
-              newcfg=1;
-              break;
-            case 2:
-            case 3:
-              newcfg=3;
-              break;
-            default:
-              return ERR;
-          }
-        };
-        if (newcfg != cfg){
-          Config.set(CONFIG_DATARATE, dataRate);
-          Config.set(CONFIG_CONFIG_ID,newcfg);
-          loadSettings();
-          // change config to newcfg
-        }
-        return OK;
-      }
+  byte result=getParamData(&threshold,2);
+  if (result == OK){
+    if (threshold < 33 ){
+      Config.set(CONFIG_TX_THRESHOLD, threshold);
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(dataRateTable[Config.get(CONFIG_DATARATE)]); //Modified by Icing
+    Serial.println(Config.get(CONFIG_TX_THRESHOLD),DEC); 
     return(OK); 
   }
   return ERR;
@@ -282,22 +240,21 @@ int DR_command(){
 int BD_command(){
   DEBUGPRINT()
   int idx;
-  if (Serial.available()){
-    if (getParamData(&idx,1) == OK){
-      if (idx < sizeof(baudRateTable)){
-        Config.set(CONFIG_BDINDEX, idx);
-        Serial.println("ok");
-        Serial.flush();
-        delay(1);      
-        Serial.begin(baudRateTable[idx]);//modified by Icing
-        return NOTHING;
-      }
+  
+  byte result=getParamData(&idx,1);
+  if (result == OK){
+    if (idx < sizeof(baudRateTable)){
+      Config.set(CONFIG_BDINDEX, idx);
+      Serial.println("ok");
+      Serial.flush();
+      delay(1);      
+      Serial.begin(baudRateTable[idx]);//modified by Icing
+      return NOTHING;
     }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    idx=Config.get(CONFIG_BDINDEX);
-    Serial.println(baudRateTable[idx]);
+    Serial.println(Config.get(CONFIG_BDINDEX),DEC);
     return OK;
   }
   return ERR;
@@ -307,24 +264,25 @@ int MD_command(){
   DEBUGPRINT()
   int md;
 
-  if (Serial.available()){
-    if (getParamData(&md,1) == OK)
-      if (md < 5){ // CMD_MODE is removed by Icing
-        rfBeeMode=(RFBEEMODE) md;
-        // handle sleep mode, all other modes are handled in loop() and started from IDLE
-        if (rfBeeMode==SLEEP_MODE){
-          CCx.Strobe(CCx_SIDLE);
-          CCx.Strobe(CCx_SPWD);
-        }
-        else
-          CCx.Strobe(CCx_SIDLE);
-        serialMode = SERIALDATAMODE;
-        return OK;
+  byte result=getParamData(&md,1);
+  
+  if (result == OK){
+    if (md < sizeof(RFBEEMODE)){ 
+      rfBeeMode=(RFBEEMODE) md;
+      // handle sleep mode, all other modes are handled in loop() and started from IDLE
+      if (rfBeeMode==SLEEP_MODE){
+        CCx.Strobe(CCx_SIDLE);
+        CCx.Strobe(CCx_SPWD);
       }
+      else
+        CCx.Strobe(CCx_SIDLE);
+      serialMode = SERIALDATAMODE;
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(rfBeeMode);
+    Serial.println(rfBeeMode,DEC);
     return(OK); 
   }
   return ERR;
@@ -332,13 +290,13 @@ int MD_command(){
 
 int FV_command(){
   DEBUGPRINT()
-  Serial.println(FIRMWAREVERSION);
+  Serial.println(((float) FIRMWAREVERSION)/10,1);
   return OK;
 }
 
 int HV_command(){
   DEBUGPRINT()
-  Serial.println((Config.get(CONFIG_HW_VERSION)),DEC);//modified by Icing
+  Serial.println(((float)Config.get(CONFIG_HW_VERSION))/10,1);
   return OK;
 }
 
@@ -351,69 +309,69 @@ int RS_command(){
 int CF_command(){
   DEBUGPRINT()
   int cf;
-  if (Serial.available()){
-    if (getParamData(&cf,1) == OK)
-      if (cf < CCx.NrOfConfigs() ){
-        Config.set(CONFIG_CONFIG_ID,cf); 
-        // data rate is determined by the chosen configuration
-        switch(cf){
-          case 1:
-          case 3:
-              Config.set(CONFIG_DATARATE, 1);
-              break;
-          default:
-              Config.set(CONFIG_DATARATE, 0);
-              break;
-        }
-        loadSettings();
-        return OK;
-      }
+  
+  byte result=getParamData(&cf,1);
+  if (result == OK){
+    if (cf < CCx.NrOfConfigs() ){
+      Config.set(CONFIG_CONFIG_ID,cf); 
+      loadSettings();
+      return OK;
+    }
   }
-  else{
+  if (result == NOTHING){
     // return current setting
-    Serial.println(Config.get(CONFIG_CONFIG_ID),DEC); //modified by Icing
-    return(OK); 
-  }
-  return ERR;
-}
-int SI_command(){
-  DEBUGPRINT()
-  int si;
-  if (Serial.available()){
-    if (getParamData(&si,1) == OK)
-      if (si < 2 ){
-        Config.set(CONFIG_STATUS, si);
-        CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | (si<<2));
-        return OK;
-      }
-  }
-  else{
-    // return current setting
-    Serial.println(Config.get(CONFIG_STATUS)); 
+    Serial.println(Config.get(CONFIG_CONFIG_ID),DEC); 
     return(OK); 
   }
   return ERR;
 }
 
-int getParamData(int *result, int size){
+int SI_command(){
+  DEBUGPRINT()
+  int si;
+  
+  byte result=getParamData(&si,1);
+  if (result == OK){
+    if (si < 2 ){
+      Config.set(CONFIG_RETURN_STATUS_BYTE, si);
+      CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | (si<<2));
+      return OK;
+    }
+  }
+  if (result == NOTHING){
+    // return current setting
+    Serial.println(Config.get(CONFIG_RETURN_STATUS_BYTE),DEC); 
+    return(OK); 
+  }
+  return ERR;
+}
+
+int O0_command(){  // thats an o+zero
+  DEBUGPRINT()
+  serialMode = SERIALDATAMODE;
+  return OK;
+}
+
+byte getParamData(int *result, int size){
   // try to read a number
   byte c;
   int value=0;
   boolean valid=false;
+  int pos=4; // we start to read at pos 5 as 0-1 = AT and 2-3 = CMD
   
-  do {
-    c=Serial.read();
-    if ( c== -1) // no data available
+  if (serialData[pos] == SERIALCMDTERMINATOR )  // no data was available
+    return NOTHING;
+    
+  while (size-- > 0){
+    c=serialData[pos++];
+    if ( c== SERIALCMDTERMINATOR)  // no more data available 
       break;
-    else{
-      if ((c < '0') || (c > '9'))
-        break;
-      else{
-        valid=true;
-        value=(value*10)+ (c -'0');
-      }
-    }
-  } while (--size > 0);
+    if ((c < '0') || (c > '9'))     // illegal char
+      return ERR;                     
+    // got a digit
+    valid=true;
+    value=(value*10)+ (c -'0');
+  } 
   if (valid){
     *result=value;
     return OK;
