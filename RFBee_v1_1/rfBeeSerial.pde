@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 4, 2010
+//  Version: June 5, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -128,11 +128,9 @@ void readSerialData(){
   }
  
   if (len > 0){
-    if(TRANSMIT_MODE == rfBeeMode || TRANSCEIVE_MODE== rfBeeMode){//only when TRANSMIT_MODE or TRANSCEIVE,transmit the buffer data,otherwise flush it.
-        transmitData(&serialData[0],len,Config.get(CONFIG_MY_ADDR),Config.get(CONFIG_DEST_ADDR));//my addr and dest addr is changed here. -by Icing
-    }
-    else
-      Serial.flush();
+    //only when TRANSMIT_MODE or TRANSCEIVE,transmit the buffer data,otherwise ignore
+    if( rfBeeMode == TRANSMIT_MODE || rfBeeMode == TRANSCEIVE_MODE )                             
+        transmitData(&serialData[0],len,Config.get(CONFIG_MY_ADDR),Config.get(CONFIG_DEST_ADDR)); 
     pos=0; // serial databuffer is free again.
   }
 }
