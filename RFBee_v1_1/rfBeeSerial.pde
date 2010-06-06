@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 5, 2010
+//  Version: June 6, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -67,14 +67,19 @@ void readSerialCmd(){
 
 int processSerialCmd(byte size){
   DEBUGPRINT()  
+  char cmd[2];
+  AT_Command_Function_t function;
+  
   // read the AT
   if (strncasecmp("AT",(char *)serialData,2)==0){
     // read the command
-    for(int i=0;i<=sizeof(atCommands);i++){
+    for(int i=0;i<=sizeof(atCommands)/sizeof(AT_Command_t);i++){
       // do we have a known command
-      if (strncasecmp(atCommands[i].name,(char *) serialData+2,2)==0){
+      if (strncasecmp_P((char *) serialData+2 , (PGM_P) pgm_read_word(&(atCommands[i].name)), 2)==0){
+        // get the function pointer from PROGMEM
+        function= (AT_Command_Function_t) pgm_read_word(&(atCommands[i].function));
         // call the command function
-        return(atCommands[i].function());  // return the result of the execution of the function linked to the command
+        return(function());  // return the result of the execution of the function linked to the command
       }
     }
   }
@@ -241,12 +246,12 @@ int BD_command(){
   
   byte result=getParamData(&idx,1);
   if (result == OK){
-    if (idx < sizeof(baudRateTable)){
+    if (idx < sizeof(baudRateTable)/sizeof(long)){
       Config.set(CONFIG_BDINDEX, idx);
       Serial.println("ok");
       Serial.flush();
       delay(1);      
-      Serial.begin(baudRateTable[idx]);//modified by Icing
+      Serial.begin(pgm_read_dword(&baudRateTable[idx]));
       return NOTHING;
     }
   }

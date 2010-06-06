@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 4, 2010
+//  Version: June 6, 2010
 //
 //  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 //  as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -46,7 +46,7 @@ void setup(){
 #endif 
       Config.reset();
     }
-    Serial.begin(baudRateTable[Config.get(CONFIG_BDINDEX)]);
+    Serial.begin(pgm_read_dword(&baudRateTable[Config.get(CONFIG_BDINDEX)]));
     //Serial.print(Config.get(CONFIG_BDINDEX),DEC);
     rfBeeInit();
     Serial.println("ok");
