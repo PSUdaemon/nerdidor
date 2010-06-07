@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 6, 2010
+//  Version: June 7, 2010
 //
 //  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 //  as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -126,7 +126,7 @@ byte txFifoFree(){
   if (state==RECV_WAITING)
     receiveData();
   else
-    state==IDLE;
+    state=IDLE;
 #endif
   return (CCx_FIFO_SIZE - (stat & 0x7F));
 }
@@ -156,7 +156,7 @@ void transmitData(byte *serialData,byte len, byte srcAddress, byte destAddress){
   if (state==RECV_WAITING)
     receiveData();
   else
-    state==IDLE;
+    state=IDLE;
 #endif
 
 }

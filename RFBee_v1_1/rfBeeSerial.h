@@ -29,7 +29,7 @@
 #include "CCx.h"
 #include <avr/pgmspace.h>
 
-#define BUFFLEN 64
+#define BUFFLEN CCx_PACKT_LEN
 #define SERIALCMDMODE 1
 #define SERIALDATAMODE 0
 #define SERIALCMDTERMINATOR 13  // use <CR> to terminate commands
