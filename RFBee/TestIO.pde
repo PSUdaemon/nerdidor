@@ -1,153 +1,80 @@
-//#include <EEPROM.h>
+// rfBee selftest
+// optimized for least RAM usage
+#include "TestIO.h"
 
-unsigned char pin[12];
 
-unsigned char PD_4 = 4;
-unsigned char PB_1 = 9;
+#define numPins 6
 
-unsigned char PB_0 = 8;
-unsigned char PD_7 = 7;
+#define IO_PD_4 4
+#define IO_PB_1 9
 
-unsigned char PC_4 = 18;
-unsigned char PC_5 = 19;
+#define IO_PB_0 8
+#define IO_PD_7 7
 
-unsigned char PD_6 = 6;
-unsigned char PD_5 = 5;
+#define IO_PC_4 18
+#define IO_PC_5 19
 
-unsigned char PC_0 = 14;
-unsigned char PC_1 = 15;
+#define IO_PD_6 6
+#define IO_PD_5 5
 
-unsigned char PC_2 = 16;
-unsigned char PC_3 = 17;
+#define IO_PC_0 14
+#define IO_PC_1 15
 
-unsigned char ADC_7 = 7;
+#define IO_PC_2 16
+#define IO_PC_3 17
 
-void setPinMode(unsigned char *inputPin,int inNum,unsigned char *outputPin,int outNum)
-{
-  int i;
-  for(i = 0; i < inNum; i++)
-  {
-    pinMode(inputPin[i],INPUT);
+#define IO_ADC_7 7
+
+
+int TestIoPins(){
+  byte pin[numPins*2]={ 
+    IO_PD_4, 
+    IO_PB_0,
+    IO_PC_4,
+    IO_PD_6,
+    IO_PC_0,
+    IO_PC_2,
+    
+    IO_PB_1,
+    IO_PD_7,
+    IO_PC_5,
+    IO_PD_5,
+    IO_PC_1,
+    IO_PC_3,
+    };  
+  byte i=0;
+  
+  for (i=0;i<6;i++){
+    pinMode(pin[i],INPUT);
+    pinMode(pin[i+6],OUTPUT);
+    digitalWrite(pin[i+6],HIGH);
   }
-  for(i = 0; i < outNum; i++)
-  {
-    pinMode(outputPin[i],OUTPUT);
+  for (i=0;i<6;i++){
+    if (digitalRead(pin[i]) != HIGH)
+      return ERR;
   }
+  for (i=0;i<6;i++){
+    pinMode(pin[i],OUTPUT);
+    pinMode(pin[i+6],INPUT);
+    digitalWrite(pin[i],HIGH);
+  }
+  for (i=0;i<6;i++){
+    if (digitalRead(pin[i+6]) != HIGH)
+        return ERR; 
+  }
+  if (analogRead(IO_ADC_7) < 500)
+    return ERR; 
+  
+  return OK;
 }
 
-void digitalWritePin(unsigned char *pin,int pinNum,int level)
-{
-    int i;
-    for(i = 0; i< pinNum; i++)
-    {
-      digitalWrite(pin[i],level);
-    }
+int TestIO(){
+  int result=TestIoPins();
+  if (result==OK){
+    Config.set(CONFIG_HW_VERSION,HARDWAREVERSION);  // write the hardware version to eeprom
+    Serial.println("IO ok");
+  }
+  else
+    Serial.println("IO error");
+  return result;
 }
-
-void digitalReadPin(unsigned char *pin,int pinNum, unsigned char *readValue)
-{
-  int i;
-  for(i = 0; i < pinNum; i++)
-  {
-      readValue[i] = digitalRead(pin[i]);
-  }
-}
-
-int TestIO()
-{
-  unsigned char IODat[6] = {   0,0,0,0,0,0  };
-  int ADDat = 0;
-  int errorFlag = 0;
-  int i;
-  
-  pin[0] = PD_4;
-  pin[1] = PB_0;
-  pin[2] = PC_4;
-  pin[3] = PD_6;
-  pin[4] = PC_0;
-  pin[5] = PC_2;
-
-  pin[6] = PB_1;
-  pin[7] = PD_7;
-  pin[8] = PC_5;
-  pin[9] = PD_5;
-  pin[10] = PC_1;
-  pin[11] = PC_3;
-
-  //Serial.begin(9600);
-
-  
-  //test pin[0-5] in, and pin[6-11] out
-  setPinMode(pin,6,pin+6,6);  
-  digitalWritePin(pin+6,6,HIGH);
-  digitalReadPin(pin,6,IODat);
-  for(i = 0; i < 6; i++)
-  {
-      if(0 == IODat[i])
-      {
-         errorFlag = 1;
-      }
-  }
-  /*
-  if(1 == IODat[0]){    Serial.println("\r\nPD4,PB1 in out OK!");  }
-  else{    Serial.println("PD4,PB1 in out ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[1]){    Serial.println("PB0,PD7 in out OK!");  }
-  else{    Serial.println("PB0,PD7 in out ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[2]){    Serial.println("PC4,PC5 in out OK!");  }
-  else{    Serial.println("PC4,PC5 in out ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[3]){    Serial.println("PD6,PD5 in out OK!");  }
-  else{    Serial.println("PD6,PD5 in out ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[4]){    Serial.println("PC0,PC1 in out OK!");  }
-  else{    Serial.println("PC0,PC1 in out ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[5]){    Serial.println("PC2,PC3 in out OK!");  }
-  else{    Serial.println("PC2,PC3 in out ERROR!");  errorFlag = 1;}
-  */
-  //test pin[0-5] out, and pin[6-11] in, and ADC7 read
-  setPinMode(pin+6,6,pin,6);
-  digitalWritePin(pin,6,HIGH);
-  digitalReadPin(pin+6,6,IODat);
-  
-  ADDat = analogRead(ADC_7);
-/*
-  if(1 == IODat[0]){    Serial.println("\r\nPD4,PB1 out in OK!");  }
-  else{    Serial.println("PD4,PB1 out in ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[1]){    Serial.println("PB0,PD7 out in OK!");  }
-  else{    Serial.println("PB0,PD7 out in ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[2]){    Serial.println("PC4,PC5 out in OK!");  }
-  else{    Serial.println("PC4,PC5 out in ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[3]){    Serial.println("PD6,PD5 out in OK!");  }
-  else{    Serial.println("PD6,PD5 out in ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[4]){    Serial.println("PC0,PC1 out in OK!");  }
-  else{    Serial.println("PC0,PC1 out in ERROR!");  errorFlag = 1;}
-
-  if(1 == IODat[5]){    Serial.println("PC2,PC3 out in OK!");  }
-  else{    Serial.println("PC2,PC3 out in ERROR!");  errorFlag = 1;}
-
-  if(ADDat > 500)  {    Serial.println("ADC7 out in OK!");    }
-  else  {      Serial.println("ADC7 out in ERROR!");   errorFlag = 1;}
-  */
-  for(i = 0; i < 6; i++)
-  {
-      if(0 == IODat[i])
-      {
-         errorFlag = 1;
-      }
-  }
-  if(ADDat < 500)
-  {
-      errorFlag = 1;
-  }
-  
-  return errorFlag;
-}
-
-

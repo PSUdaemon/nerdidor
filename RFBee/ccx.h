@@ -1,11 +1,38 @@
-#ifndef _CC1100_H
-#define _CC1100_H
-#include "Atmegax.h"
+//  CCx.h  Class to control the chipcon CCxxxx series transceivers
+//  see http://focus.ti.com/lit/ds/symlink/cc1101.pdf for details on the CC1101
+
+//  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
+//  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
+//  Version: May 22, 2010
+//
+//  This library is free software; you can redistribute it and/or
+//  modify it under the terms of the GNU Lesser General Public
+//  License as published by the Free Software Foundation; either
+//  version 2.1 of the License, or (at your option) any later version.
+//
+//  This library is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public
+//  License along with this library; if not, write to the Free Software
+//  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+#ifndef _CCX_H
+#define _CCX_H 1
+#include "WProgram.h"
+#include "debug.h"
+
+
+#define CCx_PACKT_LEN 64
+#define CCx_PA_TABLESIZE 8
+
 
 // CC2500/CC1100/CC1101 STROBE, CONTROL AND STATUS REGISTER
 #define CCx_IOCFG2       0x00        // GDO2 output pin configuration
 #define CCx_IOCFG1       0x01        // GDO1 output pin configuration
-#define CCx_IOCFG0       0x02        // GDO0 output pin configuration
+#define CCx_IOCFG0D      0x02        // GDO0 output pin configuration
 #define CCx_FIFOTHR      0x03        // RX FIFO and TX FIFO thresholds
 #define CCx_SYNC1        0x04        // Sync word, high byte
 #define CCx_SYNC0        0x05        // Sync word, low byte
@@ -92,56 +119,34 @@
 #define CCx_TXFIFO       0x3F
 #define CCx_RXFIFO       0x3F
 
-// RF_SETTINGS is a data structure which contains all relevant CCx registers
-typedef struct RF_SETTINGS {
-    unsigned char FSCTRL1;   // Frequency synthesizer control.
-    unsigned char FSCTRL0;   // Frequency synthesizer control.
-    unsigned char FREQ2;     // Frequency control word, high byte.
-    unsigned char FREQ1;     // Frequency control word, middle byte.
-    unsigned char FREQ0;     // Frequency control word, low byte.
-    unsigned char MDMCFG4;   // Modem configuration.
-    unsigned char MDMCFG3;   // Modem configuration.
-    unsigned char MDMCFG2;   // Modem configuration.
-    unsigned char MDMCFG1;   // Modem configuration.
-    unsigned char MDMCFG0;   // Modem configuration.
-    unsigned char CHANNR;    // Channel number.
-    unsigned char DEVIATN;   // Modem deviation setting (when FSK modulation is enabled).
-    unsigned char FREND1;    // Front end RX configuration.
-    unsigned char FREND0;    // Front end RX configuration.
-    unsigned char MCSM0;     // Main Radio Control State Machine configuration.
-    unsigned char FOCCFG;    // Frequency Offset Compensation Configuration.
-    unsigned char BSCFG;     // Bit synchronization Configuration.
-    unsigned char AGCCTRL2;  // AGC control.
-	unsigned char AGCCTRL1;  // AGC control.
-    unsigned char AGCCTRL0;  // AGC control.
-    unsigned char FSCAL3;    // Frequency synthesizer calibration.
-    unsigned char FSCAL2;    // Frequency synthesizer calibration.
-	unsigned char FSCAL1;    // Frequency synthesizer calibration.
-    unsigned char FSCAL0;    // Frequency synthesizer calibration.
-    unsigned char FSTEST;    // Frequency synthesizer calibration control
-    unsigned char TEST2;     // Various test settings.
-    unsigned char TEST1;     // Various test settings.
-    unsigned char TEST0;     // Various test settings.
-    unsigned char FIFOTHR;
-    unsigned char IOCFG2;    // GDO2 output pin configuration
-    unsigned char IOCFG0;    // GDO0 output pin configuration
-    unsigned char PKTCTRL1;  // Packet automation control.
-    unsigned char PKTCTRL0;  // Packet automation control.
-    unsigned char ADDR;      // Device address.
-    unsigned char PKTLEN;    // Packet length.
-} RF_SETTINGS;
+#define CCx_FIFO_SIZE    0x40 // 64 bytes
 
-uchar CCxRead(uchar addr);
-void CCxReadBurst(uchar addr, uchar* dataPtr, uint dataCount);
-uchar CCxWrite(uchar addr, uchar dat);
-void CCxWriteBurst(uchar addr, const uchar* dataPtr, uint dataCount);
-uchar CCxStrobe(uchar addr);
 
-//power on reset as discribed in  27.1 of cc1100 datasheet
-void CCxPowerOnStartUp();
+class CCX
+{
+  public:
+    CCX(void);
+    byte Read(byte addr, byte* data);
+    byte ReadBurst(byte addr, byte* dataPtr, byte dataCount);
+    byte Write(byte addr, byte dat);
+    byte WriteBurst(byte addr, const byte* dataPtr, byte dataCount);
+    byte Strobe(byte addr);
 
-//configure registers of cc1100 making it work in specific mode
-void CCxSetup(const RF_SETTINGS* settings);
-uchar CCxReadSetup();
+    //power on reset as discribed in  27.1 of cc1100 datasheet
+    void PowerOnStartUp();
+
+    //configure registers of cc1100 making it work in specific mode
+    byte NrOfConfigs(void);
+    void Setup(byte configId);
+    void ReadSetup(void);
+    // set power amplification using a table
+    void setPA(byte configId, byte paIndex );
+    // switch radio mode
+    void Mode(byte);
+    // decode RSSI value
+    byte RSSIdecode(byte rssiEnc);
+};
+
+extern CCX CCx;
 
 #endif
