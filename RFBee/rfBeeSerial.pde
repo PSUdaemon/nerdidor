@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 7, 2010
+//  Version: June 18, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -82,6 +82,7 @@ void readSerialData(){
   byte fifoSize=0;
   static byte plus=0;
   static byte pos=0;
+  byte rfBeeMode;
  
   // insert any plusses from last round
   for(int i=pos; i< plus;i++) //be careful, i should start from pos, -changed by Icing
@@ -122,6 +123,7 @@ void readSerialData(){
   }
   
   if (len > 0){
+    rfBeeMode=Config.get(CONFIG_RFBEE_MODE);   
     //only when TRANSMIT_MODE or TRANSCEIVE,transmit the buffer data,otherwise ignore
     if( rfBeeMode == TRANSMIT_MODE || rfBeeMode == TRANSCEIVE_MODE )                             
         transmitData(serialData,len,Config.get(CONFIG_MY_ADDR),Config.get(CONFIG_DEST_ADDR)); 
@@ -316,9 +318,9 @@ int MD_command(){
   
   if (result == OK){
     if (md < 5){ 
-      rfBeeMode= md;
+      Config.set(CONFIG_RFBEE_MODE,md); 
       // handle sleep mode, all other modes are handled in loop() and started from IDLE
-      if (rfBeeMode==SLEEP_MODE){
+      if (md ==SLEEP_MODE){
         CCx.Strobe(CCx_SIDLE);
         CCx.Strobe(CCx_SPWD);
       }
@@ -327,7 +329,7 @@ int MD_command(){
   }
   if (result == NOTHING){
     // return current setting
-    Serial.println(rfBeeMode,DEC);
+    Serial.println(Config.get(CONFIG_RFBEE_MODE),DEC); 
     return(OK); 
   }
   return ERR;

@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 4, 2010
+//  Version: June 18, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -38,33 +38,14 @@ void CONFIG::reset()
     EEPROM.write(CONFIG_DEST_ADDR,65);//'A'
     EEPROM.write(CONFIG_MY_ADDR,65);//'A'
     EEPROM.write(CONFIG_ADDR_CHECK,0x00);
-    EEPROM.write(CONFIG_TX_THRESHOLD,0x04);
+    EEPROM.write(CONFIG_TX_THRESHOLD,0x01);
     EEPROM.write(CONFIG_BDINDEX,0x00);
     EEPROM.write(CONFIG_PAINDEX,0x07);
     EEPROM.write(CONFIG_CONFIG_ID,0x00);
     if (EEPROM.read(CONFIG_HW_VERSION) < 10)
           EEPROM.write(CONFIG_HW_VERSION,10);  // dirty hack to ensure rfBee's without a hardware version get their hardware version set to 1.0
-    EEPROM.write(CONFIG_OUTPUT_FORMAT,0x00);   // minimum output
-    
-    /*Serial.print(EEPROM.read(CONFIG_RFBEE_MARKER),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_DEST_ADDR),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_MY_ADDR),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_ADDR_CHECK),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_TX_THRESHOLD),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_DATARATE),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_BDINDEX),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_PAINDEX),HEX);
-    Serial.print(" ");
-    Serial.print(EEPROM.read(CONFIG_CONFIG_ID),HEX);
-    Serial.println(" ");
-    */
+    EEPROM.write(CONFIG_OUTPUT_FORMAT,0x00);   
+    EEPROM.write(CONFIG_RFBEE_MODE,0x03); 
 }
 
 //------------------ get -----------------------------------------------

@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 7, 2010
+//  Version: June 18, 2010
 //
 //  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 //  as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -53,8 +53,13 @@ void setup(){
 }
 
 void loop(){
+
+  byte rfBeeMode;
+  
   // CCx_MCSM1 is configured to have TX and RX return to IDLE on completion or timeout
   // so we need to explicitly enable RX mode.
+  
+  rfBeeMode=Config.get(CONFIG_RFBEE_MODE);   
   
   if ((rfBeeMode == RECEIVE_MODE) || (rfBeeMode == TRANSCEIVE_MODE))
     if (serialMode != SERIALCMDMODE){
@@ -86,7 +91,6 @@ void rfBeeInit(){
     CCx.PowerOnStartUp();
     loadSettings();
     serialMode=SERIALDATAMODE;
-    rfBeeMode=TRANSCEIVE_MODE;   
     
 #ifdef USE_INTERRUPT_RECEIVE   
     state=IDLE;

@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 6, 2010
+//  Version: June 18, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -129,9 +129,8 @@ static char *error_codes[] PROGMEM={
 
 long baudRateTable[] PROGMEM= {9600,19200,38400,115200};
 
-// operating mode, see ATMD
+// operating modes, used by ATMD
 
-byte rfBeeMode;
 #define IDLE_MODE 0
 #define TRANSMIT_MODE 1     
 #define RECEIVE_MODE 2 
