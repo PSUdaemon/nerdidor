@@ -19,7 +19,7 @@
 
 #define FIRMWAREVERSION 11 // 1.1  , version number needs to fit in byte (0~255) to be able to store it into config
 //#define FACTORY_SELFTEST
-#define INTERRUPT_RECEIVE
+//#define INTERRUPT_RECEIVE
 //#define DEBUG 
 
 
@@ -55,24 +55,28 @@ void setup(){
 void loop(){
   // CCx_MCSM1 is configured to have TX and RX return to IDLE on completion or timeout
   // so we need to explicitly enable RX mode.
+  
   if ((rfBeeMode == RECEIVE_MODE) || (rfBeeMode == TRANSCEIVE_MODE))
-    if (serialMode != SERIALCMDMODE)
+    if (serialMode != SERIALCMDMODE){
+      //INTERRUPT_GUARD( BUSY )
       CCx.Strobe(CCx_SRX);  
-    
+      //END_INTERRUPT_GUARD
+    }
+      
   if (Serial.available() > 0){
     if (serialMode == SERIALCMDMODE)
       readSerialCmd();
     else
       readSerialData();
   }
+  
 #ifdef USE_INTERRUPT_RECEIVE   
   if (state==RECV_WAITING)
-     receiveData();
+     writeSerialData();
 #else // polling mode
- if ( digitalRead(GDO0) == HIGH ) 
-   receiveData();
+  if ( digitalRead(GDO0) == HIGH ) 
+    writeSerialData();
 #endif
- 
 }
 
 
@@ -82,7 +86,7 @@ void rfBeeInit(){
     CCx.PowerOnStartUp();
     loadSettings();
     serialMode=SERIALDATAMODE;
-    rfBeeMode=RECEIVE_MODE;   
+    rfBeeMode=TRANSCEIVE_MODE;   
     
 #ifdef USE_INTERRUPT_RECEIVE   
     state=IDLE;
@@ -101,118 +105,22 @@ void ISRVreceiveData(){
   if (state != IDLE)
     state=RECV_WAITING;
   else
-    receiveData();
+    writeSerialData();
 }
 
 #endif
 
 
-// read available txFifo size and handle underflow (which should not have occured anyway)
-byte txFifoFree(){
-  byte stat;
-#ifdef USE_INTERRUPT_RECEIVE
-  state=CHECKTX;
-#endif
-  
-  CCx.Read(CCx_TXBYTES, &stat);
-  // handle a potential TX underflow by flushing the TX FIFO as described in section 10.1 of the CC 1100 datasheet
-  if (stat & 0x80){
-    CCx.Strobe(CCx_SFTX);
-    stat=CCx.Read(CCx_TXBYTES,&stat);
-  }
-  
-#ifdef INTERRUPT_RECEIVE
-  // did we miss a receive interrupt ?
-  if (state==RECV_WAITING)
-    receiveData();
-  else
-    state=IDLE;
-#endif
-  return (CCx_FIFO_SIZE - (stat & 0x7F));
-}
 
-// send data via RF
-void transmitData(byte *serialData,byte len, byte srcAddress, byte destAddress){
-  DEBUGPRINT()
-  byte stat;
-  
-#ifdef USE_INTERRUPT_RECEIVE
-  state=TRANSMIT;
-#endif
-  //Serial.println(len,DEC);
-  CCx.Write(CCx_TXFIFO,len+2);
-  CCx.Write(CCx_TXFIFO,destAddress);
-  CCx.Write(CCx_TXFIFO,srcAddress);
-  CCx.WriteBurst(CCx_TXFIFO,serialData, len); // write len bytes of the serialData buffer into the CCx txfifo
-  CCx.Strobe(CCx_STX);
-  delay(5);//give some time to STX,as the state would be changed to IDLE or RX in the loop.
-#ifdef DEBUG
-  serialData[len]='\0';
-  Serial.println((char *)serialData);
-#endif
 
-#ifdef INTERRUPT_RECEIVE
-  // did we miss a receive interrupt ?
-  if (state==RECV_WAITING)
-    receiveData();
-  else
-    state=IDLE;
-#endif
-
-}
-
-// receive data via RF 
-void receiveData(){
-  DEBUGPRINT()
-  
-  byte size;
-  byte rfData[CCx_PACKT_LEN];
-  
-  byte stat=CCx.Read(CCx_RXBYTES,&size);
-    
-  DEBUGPRINT(size)
-  //packet format: payloadLen + dstAddr+ srcAddr +data + (RSSI + LQI)->optional
-  //               1byte        1byte     1byte   nbyte  (1byte  1byte)
-  //               payloadLen = length of addr and data = 2 + n
-  //total len i =      1             +  (2 +   n)  +  (1    +   1)
-  	
-  if(size > 2 && size <= CCx_PACKT_LEN)
-    CCx.ReadBurst(CCx_RXFIFO, rfData, size);
-  else
-    Serial.println("Error: Received invalid RF data size");
-  // if the RSSI and LQI byte are present we need to subtract them from the length
-  if (Config.get(CONFIG_RETURN_STATUS_BYTE) == 1)
-    size -= 2;
-  // playloadLen should be total size - 1
-  if(rfData[0] == (size - 1)){
-        // write dstAddr + srcAddr + data 
-        Serial.write(&rfData[0], size); 
-        // write the decoded RSSI value
-        if( Config.get(CONFIG_RETURN_STATUS_BYTE) == 1 ) 
-          Serial.print(byte(CCx.RSSIdecode(rfData[size])));
-   }
-   else{
-     Serial.println("Error: Received invalid RF data");
-   }
-   // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
-   if ((stat & 0xF0) == 0x60)//Modified by Icing. When overflows, STATE[2:0] = 110 
-     CCx.Strobe(CCx_SFRX);
-  
-#ifdef INTERRUPT_RECEIVE
-  // return to IDLE state
-  state=IDLE;
-#endif
-}
 
 void loadSettings(){
   // load the appropriate config table
   byte cfg=Config.get(CONFIG_CONFIG_ID);
-//  Serial.println(cfg,DEC);
   CCx.Setup(cfg);  
   //CCx.ReadSetup();
   // and restore the config settings
   CCx.Write(CCx_ADDR, Config.get(CONFIG_MY_ADDR));
-  //CCx.Write(CCx_PKTCTRL1, (Config.get(CONFIG_ADDR_CHECK) | 0x04 ));
-  CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | ((Config.get(CONFIG_RETURN_STATUS_BYTE))<<2));
+  CCx.Write(CCx_PKTCTRL1, (Config.get(CONFIG_ADDR_CHECK) | 0x04 ));
   CCx.setPA(cfg,Config.get(CONFIG_PAINDEX));
 }

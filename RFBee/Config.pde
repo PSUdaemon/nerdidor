@@ -44,7 +44,7 @@ void CONFIG::reset()
     EEPROM.write(CONFIG_CONFIG_ID,0x00);
     if (EEPROM.read(CONFIG_HW_VERSION) < 10)
           EEPROM.write(CONFIG_HW_VERSION,10);  // dirty hack to ensure rfBee's without a hardware version get their hardware version set to 1.0
-    EEPROM.write(CONFIG_RETURN_STATUS_BYTE,0x00);//disable RSSI and LQI bytes
+    EEPROM.write(CONFIG_OUTPUT_FORMAT,0x00);   // minimum output
     
     /*Serial.print(EEPROM.read(CONFIG_RFBEE_MARKER),HEX);
     Serial.print(" ");

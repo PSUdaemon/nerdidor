@@ -36,7 +36,7 @@
 #define CONFIG_BDINDEX            7  // Index to baudrate
 #define CONFIG_PAINDEX            8  // Index to PowerAmplifier
 #define CONFIG_CONFIG_ID          9 // Selected CCx configuration
-#define CONFIG_RETURN_STATUS_BYTE 10 // return RSSI or not. -Added by Icing
+#define CONFIG_OUTPUT_FORMAT     10 // output format to use
 
 // marker
 #define CONFIG_RFBEE_MARKER_VALUE 0xAB

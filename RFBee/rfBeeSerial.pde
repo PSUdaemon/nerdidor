@@ -29,10 +29,6 @@ void readSerialCmd(){
   char data;
   static byte pos=0;
   
-#ifdef USE_INTERRUPT_RECEIVE   
-  state=COMMAND;
-#endif  
- 
   while(Serial.available()){
     result=NOTHING;
     data=Serial.read();
@@ -56,13 +52,6 @@ void readSerialCmd(){
         Serial.println("error");
   }
   
-#ifdef USE_INTERRUPT_RECEIVE   
-  // did we miss a receive interrupt ?
-  if (state==RECV_WAITING)
-    receiveData();
-  else
-    state=IDLE; 
-#endif 
 }
 
 int processSerialCmd(byte size){
@@ -100,11 +89,11 @@ void readSerialData(){
   
   len=Serial.available()+plus+pos;
   if (len > BUFFLEN ) len=BUFFLEN; //only process at most BUFFLEN chars
-  
   // check how much space we have in the TX fifo
   fifoSize=txFifoFree();// the fifoSize should be the number of bytes in TX FIFO
+ 
   if (len > fifoSize)  len=fifoSize;  // don't overflow the TX fifo
-  
+    
   for(byte i=plus+pos; i< len;i++){
     data=Serial.read();
     serialData[i]=data;  //serialData is our global serial buffer
@@ -131,14 +120,70 @@ void readSerialData(){
     pos=len;  // keep the current bytes in the buffer and wait till next round.
     return;
   }
- 
+  
   if (len > 0){
     //only when TRANSMIT_MODE or TRANSCEIVE,transmit the buffer data,otherwise ignore
     if( rfBeeMode == TRANSMIT_MODE || rfBeeMode == TRANSCEIVE_MODE )                             
-        transmitData(&serialData[0],len,Config.get(CONFIG_MY_ADDR),Config.get(CONFIG_DEST_ADDR)); 
+        transmitData(serialData,len,Config.get(CONFIG_MY_ADDR),Config.get(CONFIG_DEST_ADDR)); 
     pos=0; // serial databuffer is free again.
   }
 }
+
+// write a text label from progmem, uses less bytes than individual Serial.println()
+//void writeSerialLabel(byte i){
+//  char buffer[64];
+//  strcpy_P(buffer, (char * )pgm_read_word(&(labels[i])));
+//  Serial.println(buffer);
+//}
+
+//
+void writeSerialError(){
+  DEBUGPRINT()
+  char buffer[64];
+  strcpy_P(buffer, (char * )pgm_read_word(&(error_codes[errNo])));
+  Serial.println(buffer);
+}
+
+
+
+// read data from CCx and write it to Serial based on the selected output format
+void writeSerialData(){
+  DEBUGPRINT()
+  byte rxData[CCx_PACKT_LEN];
+  byte len;
+  byte srcAddress;
+  byte destAddress;
+  byte rssi;
+  byte lqi;
+  int result;
+  
+  result=receiveData(rxData, &len, &srcAddress, &destAddress, &rssi , &lqi);
+  
+  if (result == ERR) {
+      writeSerialError();
+      return;
+  }
+// write to serial based on output format:
+//  0: payload only
+//  1: source, dest, payload
+//  2: payload len, source, dest, payload, rssi, lqi
+  if( Config.get(CONFIG_OUTPUT_FORMAT) > 1 ) 
+     Serial.print(len); // len is size of data EXCLUDING address bytes !
+  if( Config.get(CONFIG_OUTPUT_FORMAT) > 0 ) {
+    // write source & destination
+    Serial.print(srcAddress);
+    Serial.print(destAddress);
+  }  
+  // write data 
+  Serial.write(rxData,len); 
+  // write rssi en lqi
+  if( Config.get(CONFIG_OUTPUT_FORMAT) > 1 ) {
+    Serial.print(rssi);
+    Serial.print(lqi);
+  }  
+}
+
+
 
 int DA_command(){
   DEBUGPRINT()
@@ -186,7 +231,7 @@ int AC_command(){
   byte result=getParamData(&addrCheck,1);
   if (result == OK){
     if (addrCheck < 3){
-      CCx.Write(CCx_PKTCTRL1, (addrCheck | ((Config.get(CONFIG_RETURN_STATUS_BYTE))<<2) ));
+      CCx.Write(CCx_PKTCTRL1, addrCheck );
       Config.set(CONFIG_ADDR_CHECK,addrCheck);
       return OK;
     }
@@ -270,16 +315,13 @@ int MD_command(){
   byte result=getParamData(&md,1);
   
   if (result == OK){
-    if (md < sizeof(RFBEEMODE)){ 
-      rfBeeMode=(RFBEEMODE) md;
+    if (md < 5){ 
+      rfBeeMode= md;
       // handle sleep mode, all other modes are handled in loop() and started from IDLE
       if (rfBeeMode==SLEEP_MODE){
         CCx.Strobe(CCx_SIDLE);
         CCx.Strobe(CCx_SPWD);
       }
-      else
-        CCx.Strobe(CCx_SIDLE);
-      serialMode = SERIALDATAMODE;
       return OK;
     }
   }
@@ -329,21 +371,20 @@ int CF_command(){
   return ERR;
 }
 
-int SI_command(){
+int OF_command(){
   DEBUGPRINT()
-  int si;
+  int of;
   
-  byte result=getParamData(&si,1);
+  byte result=getParamData(&of,1);
   if (result == OK){
-    if (si < 2 ){
-      Config.set(CONFIG_RETURN_STATUS_BYTE, si);
-      CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | (si<<2));
+    if ( of < 3 ){
+      Config.set(CONFIG_OUTPUT_FORMAT, of);
       return OK;
     }
   }
   if (result == NOTHING){
     // return current setting
-    Serial.println(Config.get(CONFIG_RETURN_STATUS_BYTE),DEC); 
+    Serial.println(Config.get(CONFIG_OUTPUT_FORMAT),DEC); 
     return(OK); 
   }
   return ERR;
@@ -356,6 +397,7 @@ int O0_command(){  // thats an o+zero
 }
 
 byte getParamData(int *result, int size){
+  DEBUGPRINT()
   // try to read a number
   byte c;
   int value=0;

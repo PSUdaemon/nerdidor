@@ -131,7 +131,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x0E,   // FIFOTHR   RXFIFO and TXFIFO thresholds.
     0x09,   // IOCFG2    GDO2 output pin configuration.0x09-CCA mode, 0x2E-High impedance
     0x07,   // IOCFG0D   GDO0 output pin configuration. Refer to SmartRF?Studio User Manual for detailed pseudo register explanation.
-    0x00,   // PKTCTRL1  Packet automation control. bit2 = 1 append RSSI and LQI ,bit2 = 0 not append
+    0x04,   // PKTCTRL1  Packet automation control. bit2 = 1 append RSSI and LQI ,bit2 = 0 not append
     0x05,   // PKTCTRL0  Packet automation control.
     0x00,   // ADDR      Device address.
     CCx_PACKT_LEN,    // PKTLEN    Packet length.
@@ -197,7 +197,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x0E,   // FIFOTHR   RXFIFO and TXFIFO thresholds.
     0x2E,   // IOCFG2    GDO2 output pin configuration.
     0x07,   // IOCFG0D   GDO0 output pin configuration. Refer to SmartRF?Studio User Manual for detailed pseudo register explanation.
-    0x00,   // PKTCTRL1  Packet automation control.
+    0x04,   // PKTCTRL1  Packet automation control.
     0x05,   // PKTCTRL0  Packet automation control.
     0x00,   // ADDR      Device address.
     CCx_PACKT_LEN,  // PKTLEN    Packet length.

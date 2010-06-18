@@ -27,6 +27,7 @@
 #include "globals.h"
 #include "Config.h"
 #include "CCx.h"
+#include "rfBeeCore.h"
 #include <avr/pgmspace.h>
 
 #define BUFFLEN CCx_PACKT_LEN
@@ -39,6 +40,7 @@ void readSerialData();
 
 byte serialData[BUFFLEN+1]; // 1 extra so we can easily add a /0 when doing a debug print ;-)
 byte serialMode;
+
 
 // RFbee AT commands
 
@@ -57,7 +59,7 @@ int FV_command();
 int HV_command();
 int RS_command();
 int CF_command();
-int SI_command();  // added by Icing
+int OF_command();
 int O0_command();  // thats o+zero
 
 // Need to define the labels outside the struct :-(
@@ -72,7 +74,7 @@ static char FV_label[] PROGMEM="FV";
 static char HV_label[] PROGMEM="HV";
 static char RS_label[] PROGMEM="RS";
 static char CF_label[] PROGMEM="CF";
-static char SI_label[] PROGMEM="SI";
+static char OF_label[] PROGMEM="OF";
 static char O0_label[] PROGMEM="O0";
 
 // Supported commands, Commands and parameters in ASCII
@@ -95,11 +97,11 @@ static AT_Command_t atCommands[] PROGMEM =
   AT_COMMAND (AC), // address check option             (0: no, 1: address check , 2: address check and 0 broadcast )
 // RF
   AT_COMMAND (PA), // Power amplifier                  (0: -30 , 1: -20 , 2: -15 , 3: -10 , 4: 0 , 5: 5 , 6: 7 , 7: 10 )
-  AT_COMMAND (CF), // select CCx configuration        (0: 915 Mhz - 76.8k, 1: 915 Mhz - 1.2k, 2: 868 Mhz - 76.8k, 3: 868 Mhz - 1.2k, 4: 433 Mhz)
-  AT_COMMAND (SI), // enable the return of status info bytes RSSI and LQI (1:enable,0:disable). -Added by Icing
+  AT_COMMAND (CF), // select CCx configuration         (0: 915 Mhz - 76.8k, 1: 915 Mhz - 1.2k, 2: 868 Mhz - 76.8k, 3: 868 Mhz - 1.2k, 4: 433 Mhz)
 // Serial
   AT_COMMAND (BD), // Uart baudrate                    (0: 9600 , 1:19200, 2:38400 ,3:115200)
   AT_COMMAND (TH), // TH- threshold of transmitting    (0~32) 
+  AT_COMMAND (OF), // Output Format                    (0: payload only, 1: source, dest, payload ,  3: payload len, source, dest, payload, rssi, lqi )
 // Mode 
   AT_COMMAND (MD), // CCX Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:sleep)
   AT_COMMAND (O0), // go back to online mode
@@ -110,25 +112,30 @@ static AT_Command_t atCommands[] PROGMEM =
   AT_COMMAND (RS), // restore default settings
 };
 
+// error codes and labels
+byte errNo;
+
+static char error_0[] PROGMEM="error: no error";
+static char error_1[] PROGMEM="error: received invalid RF data size";
+static char error_2[] PROGMEM="error: received invalid RF data";
+
+
+static char *error_codes[] PROGMEM={
+  error_0,
+  error_1,
+  error_2,
+};
+
 
 long baudRateTable[] PROGMEM= {9600,19200,38400,115200};
 
-enum RFBEEMODE {
-   IDLE_MODE=0,
-   TRANSMIT_MODE=1,       
-   RECEIVE_MODE=2, 
-   TRANSCEIVE_MODE=3,
-   SLEEP_MODE=4,   
-} rfBeeMode;
+// operating mode, see ATMD
 
-#ifdef INTERRUPT_RECEIVE
-volatile enum STATE {
-  IDLE,
-  CHECKTX,
-  TRANSMIT,
-  RECV_WAITING,
-  COMMAND,
-} state;
-#endif
+byte rfBeeMode;
+#define IDLE_MODE 0
+#define TRANSMIT_MODE 1     
+#define RECEIVE_MODE 2 
+#define TRANSCEIVE_MODE 3
+#define SLEEP_MODE 4  
 
 #endif
