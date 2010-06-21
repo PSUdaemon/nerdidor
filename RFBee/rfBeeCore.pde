@@ -32,7 +32,7 @@ void transmitData(byte *txData,byte len, byte srcAddress, byte destAddress){
   CCx.Write(CCx_TXFIFO,srcAddress);
   CCx.WriteBurst(CCx_TXFIFO,txData, len); // write len bytes of the serialData buffer into the CCx txfifo
   CCx.Strobe(CCx_STX);
-  delay(5);//give some time to STX,as the state would be changed to IDLE or RX in the loop.
+  //delay(5);//give some time to STX,as the state would be changed to IDLE or RX in the loop.
 #ifdef DEBUG
   txData[len]='\0';
   Serial.println((char *)txData);
