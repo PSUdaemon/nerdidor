@@ -173,7 +173,7 @@ uchar paTable[] = {0x03,0x0E,0x1E,0x27,0x8E,0xCD,0xC7,0xC0};
 // Device address = 0
 // GDO0 signal selection = ( 7) Asserts when a packet has been received with OK CRC. De-asserts when the first byte is read from the RX FIFO
 // GDO2 signal selection = (46) High impedance (3-state)
-RF_SETTINGS rfSettings_1 = {
+RF_SETTINGS rfSettings = {
     0x06,   // FSCTRL1   Frequency synthesizer control.
     0x00,   // FSCTRL0   Frequency synthesizer control.
     0x23,   // FREQ2     Frequency control word, high byte.
@@ -239,7 +239,7 @@ RF_SETTINGS rfSettings_1 = {
 // Device address = 0
 // GDO0 signal selection = ( 7) Asserts when a packet has been received with OK CRC. De-asserts when the first byte is read from the RX FIFO
 // GDO2 signal selection = (46) High impedance (3-state)
-RF_SETTINGS rfSettings = {
+RF_SETTINGS rfSettings_1 = {
     0x06,   // FSCTRL1   Frequency synthesizer control.
     0x00,   // FSCTRL0   Frequency synthesizer control.
     0x21,   // FREQ2     Frequency control word, high byte.

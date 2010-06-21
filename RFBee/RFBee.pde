@@ -37,8 +37,8 @@ extern ring_buffer rx_buffer;//defined in HardwareSerial.c
 #define CCX_PACKT_LEN 64
 
 //RF default settings
-#define FQ_915_DEFAULT_SETTING
-//#define FQ_868_DEFAULT_SETTING
+//#define FQ_915_DEFAULT_SETTING
+#define FQ_868_DEFAULT_SETTING
 
 
 //Modes of operation 
