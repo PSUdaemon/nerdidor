@@ -20,7 +20,7 @@
 #define FIRMWAREVERSION 11 // 1.1  , version number needs to fit in byte (0~255) to be able to store it into config
 //#define FACTORY_SELFTEST
 //#define INTERRUPT_RECEIVE
-//#define DEBUG 
+#define DEBUG 
 
 
 #include "debug.h"
@@ -36,36 +36,33 @@
 #define GDO0 2 // used for polling the RF received data
 
 void setup(){
-  if (Config.initialized() != OK) 
-  {
-    Serial.begin(9600);
-    Serial.println("Initializing config"); 
+    if (Config.initialized() != OK) 
+    {
+      Serial.begin(9600);
+      Serial.println("Initializing config"); 
 #ifdef FACTORY_SELFTEST
-    if ( TestIO() != OK ) 
-      return;
+      if ( TestIO() != OK ) 
+        return;
 #endif 
-    Config.reset();
-  }
-  Serial.begin(pgm_read_dword(&baudRateTable[Config.get(CONFIG_BDINDEX)]));
-  //Serial.print(Config.get(CONFIG_BDINDEX),DEC);
-  rfBeeInit();
-  Serial.println("ok");
+      Config.reset();
+    }
+    setUartBaudRate();
+    rfBeeInit();
+    Serial.println("ok");
 }
 
 void loop(){
-
-  checkRFBeeMode();
-
+     
   if (Serial.available() > 0){
     if (serialMode == SERIALCMDMODE)
       readSerialCmd();
     else
       readSerialData();
   }
-
+  
 #ifdef USE_INTERRUPT_RECEIVE   
   if (state==RECV_WAITING)
-    writeSerialData();
+     writeSerialData();
 #else // polling mode
   if ( digitalRead(GDO0) == HIGH ) 
     writeSerialData();
@@ -74,18 +71,20 @@ void loop(){
 
 
 void rfBeeInit(){
-  DEBUGPRINT()
-
+    DEBUGPRINT()
+    
     CCx.PowerOnStartUp();
-  loadSettings();
-  serialMode=SERIALDATAMODE;
-
+    setCCxConfig();
+   
+    serialMode=SERIALDATAMODE;
+    
 #ifdef USE_INTERRUPT_RECEIVE   
-  state=IDLE;
-  attachInterrupt(0, ISRVreceiveData, RISING);  //GD00 is located on pin 2, which results in INT 0
+    state=IDLE;
+    attachInterrupt(0, ISRVreceiveData, RISING);  //GD00 is located on pin 2, which results in INT 0
 #else
-  pinMode(GDO0,INPUT);// used for polling the RF received data
+    pinMode(GDO0,INPUT);// used for polling the RF received data
 #endif 
+
 }
 
 // handle interrupt
@@ -93,72 +92,13 @@ void rfBeeInit(){
 
 void ISRVreceiveData(){
   DEBUGPRINT()
-
-    if (state != IDLE)
-      state=RECV_WAITING;
-    else
-      writeSerialData();
+  
+  if (state != IDLE)
+    state=RECV_WAITING;
+  else
+    writeSerialData();
 }
 
 #endif
-
-
-void loadSettings(){
-  // load the appropriate config table
-  byte cfg=Config.get(CONFIG_CONFIG_ID);
-  CCx.Setup(cfg);  
-  //CCx.ReadSetup();
-  // and restore the config settings
-  CCx.Write(CCx_ADDR, Config.get(CONFIG_MY_ADDR));
-  CCx.Write(CCx_PKTCTRL1, (Config.get(CONFIG_ADDR_CHECK) | 0x04 ));
-  CCx.setPA(cfg,Config.get(CONFIG_PAINDEX));
-}
-
-void checkRFBeeMode(){
-  static byte rfBeeMode = IDLE_MODE;
-  byte newMode;
-
-  // CCx_MCSM1 is configured to have TX and RX return to proper state on completion or timeout
-
-  newMode = Config.get(CONFIG_RFBEE_MODE);   
-  if(rfBeeMode != newMode){
-    rfBeeMode = newMode;
-    switch (rfBeeMode)
-    {
-    case IDLE_MODE:
-      CCx.Strobe(CCx_SIDLE);
-      break;
-    case TRANSMIT_MODE:
-      CCx.Strobe(CCx_SIDLE);
-      delay(1);
-      CCx.Write(CCx_MCSM1 ,   0x00 );//TXOFF_MODE->stay in IDLE
-      CCx.Strobe(CCx_SFTX);
-      break;
-    case RECEIVE_MODE:
-      CCx.Strobe(CCx_SIDLE);
-      delay(1);
-      CCx.Write(CCx_MCSM1 ,   0x0C );//RXOFF_MODE->stay in RX
-      CCx.Strobe(CCx_SFRX);
-      CCx.Strobe(CCx_SRX);
-      break;
-    case TRANSCEIVE_MODE:
-      CCx.Strobe(CCx_SIDLE);
-      delay(1);
-      CCx.Write(CCx_MCSM1 ,   0x0F );//RXOFF_MODE and TXOFF_MODE stay in RX
-      CCx.Strobe(CCx_SFTX);
-      CCx.Strobe(CCx_SFRX);
-      CCx.Strobe(CCx_SRX);
-      break;
-    case SLEEP_MODE:
-      CCx.Strobe(CCx_SIDLE);
-      CCx.Strobe(CCx_SPWD);
-      break;
-    default:		
-      break;
-    }
-  }
-
-}
-
 
 

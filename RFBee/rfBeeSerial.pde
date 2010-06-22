@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 18, 2010
+//  Version: June 22, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,91 @@
 
 
 #include "rfBeeSerial.h"
+
+//
+byte getNumParamData(int *result, int size){
+  DEBUGPRINT()
+  // try to read a number
+  byte c;
+  int value=0;
+  boolean valid=false;
+  int pos=4; // we start to read at pos 5 as 0-1 = AT and 2-3 = CMD
+  
+  if (serialData[pos] == SERIALCMDTERMINATOR )  // no data was available
+    return NOTHING;
+    
+  while (size-- > 0){
+    c=serialData[pos++];
+    if ( c== SERIALCMDTERMINATOR)  // no more data available 
+      break;
+    if ((c < '0') || (c > '9'))     // illegal char
+      return ERR;                     
+    // got a digit
+    valid=true;
+    value=(value*10)+ (c -'0');
+  } 
+  if (valid){
+    *result=value;
+    return OK;
+  }
+  return ERR;  
+}
+
+// simple standardized setup for commands that only modify config
+int modifyConfig(byte configLabel, byte paramSize, byte paramMaxValue){
+  DEBUGPRINT()
+  int param;
+  
+  byte result=getNumParamData(&param ,paramSize);
+  if (result == OK){
+    if (param <= paramMaxValue){
+      Config.set(configLabel,param);
+      return MODIFIED;
+    }
+  }
+  if (result == NOTHING){
+    // return current setting
+    Serial.println(Config.get(configLabel),DEC); 
+    return(OK); 
+  }
+  return ERR;
+}
+
+int processSerialCmd(byte size){
+  DEBUGPRINT()  
+  int result=MODIFIED;
+  
+  byte configItem;   // the ID used in the EEPROM
+  byte paramDigits;  // how many digits for the parameter
+  byte maxValue;     // maximum value of the parameter
+  byte postProcess;  // do we need to call the function to perform extra actions on change
+  AT_Command_Function_t function; // the function which does the real work on change
+ 
+  // read the AT
+  if (strncasecmp("AT",(char *)serialData,2)==0){
+    // read the command
+    for(int i=0;i<=sizeof(atCommands)/sizeof(AT_Command_t);i++){
+      // do we have a known command
+      if (strncasecmp_P((char *) serialData+2 , (PGM_P) pgm_read_word(&(atCommands[i].name)), 2)==0){
+        // get the data from PROGMEM
+        configItem=pgm_read_byte(&(atCommands[i].configItem));
+        paramDigits=pgm_read_byte(&(atCommands[i].paramDigits));
+        maxValue=pgm_read_byte(&(atCommands[i].maxValue));
+        postProcess=pgm_read_byte(&(atCommands[i].postProcess));
+        function= (AT_Command_Function_t) pgm_read_word(&(atCommands[i].function));
+        if (paramDigits > 0)
+          result=modifyConfig(configItem, paramDigits, maxValue);
+        if (result == MODIFIED){
+          result=OK;  // config only commands always return OK
+          if (postProcess==true)
+             result=function();  // call the command function
+        }
+        return(result);  // return the result of the execution of the function linked to the command
+      }
+    }
+  }
+  return ERR;
+}
 
 void readSerialCmd(){
   DEBUGPRINT()  
@@ -51,28 +136,6 @@ void readSerialCmd(){
     if (result == ERR)
         Serial.println("error");
   }
-  
-}
-
-int processSerialCmd(byte size){
-  DEBUGPRINT()  
-  char cmd[2];
-  AT_Command_Function_t function;
-  
-  // read the AT
-  if (strncasecmp("AT",(char *)serialData,2)==0){
-    // read the command
-    for(int i=0;i<=sizeof(atCommands)/sizeof(AT_Command_t);i++){
-      // do we have a known command
-      if (strncasecmp_P((char *) serialData+2 , (PGM_P) pgm_read_word(&(atCommands[i].name)), 2)==0){
-        // get the function pointer from PROGMEM
-        function= (AT_Command_Function_t) pgm_read_word(&(atCommands[i].function));
-        // call the command function
-        return(function());  // return the result of the execution of the function linked to the command
-      }
-    }
-  }
-  return ERR;
 }
 
 void readSerialData(){
@@ -143,6 +206,7 @@ void writeSerialError(){
   DEBUGPRINT()
   char buffer[64];
   strcpy_P(buffer, (char * )pgm_read_word(&(error_codes[errNo])));
+  Serial.print("error: ");
   Serial.println(buffer);
 }
 
@@ -186,243 +250,111 @@ void writeSerialData(){
 }
 
 
+int setMyAddress(){
+  DEBUGPRINT();  
+  CCx.Write(CCx_ADDR,Config.get(CONFIG_MY_ADDR)); 
+  return OK;
+} 
 
-int DA_command(){
-  DEBUGPRINT()
-  int destAddr;
-  
-  byte result=getParamData(&destAddr,3);
-  if (result == OK){
-    if (destAddr < 256){
-      Config.set(CONFIG_DEST_ADDR,destAddr);
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_DEST_ADDR),DEC); 
-    return(OK); 
-  }
-  return ERR;
+int setAddressCheck(){
+  DEBUGPRINT();
+  CCx.Write(CCx_PKTCTRL1, Config.get(CONFIG_ADDR_CHECK) | 0x04);
+  return OK;
+} 
+ 
+int setPowerAmplifier(){
+  DEBUGPRINT();
+  CCx.setPA(Config.get(CONFIG_CONFIG_ID), Config.get(CONFIG_PAINDEX));
+  return OK;
 }
 
-int MA_command(){
+int changeUartBaudRate(){
   DEBUGPRINT()
-  int myAddr;
-  
-  byte result=getParamData(&myAddr,3);
-  if (result == OK){
-    if (myAddr < 256){
-      CCx.Write(CCx_ADDR,myAddr);
-      Config.set(CONFIG_MY_ADDR,myAddr);
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_MY_ADDR),DEC); 
-    return(OK); 
-  }
-  return ERR;
+  Serial.println("ok");
+  Serial.flush();
+  delay(1);  
+  setUartBaudRate();
 }
 
-int AC_command(){
-  DEBUGPRINT()
-  int addrCheck;
-  
-  byte result=getParamData(&addrCheck,1);
-  if (result == OK){
-    if (addrCheck < 3){
-      CCx.Write(CCx_PKTCTRL1, addrCheck );
-      Config.set(CONFIG_ADDR_CHECK,addrCheck);
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_ADDR_CHECK),DEC); 
-    return(OK); 
-  }
-  return ERR;
+int setUartBaudRate(){  
+  Serial.begin(pgm_read_dword(&baudRateTable[Config.get(CONFIG_BDINDEX)]));
+  return NOTHING;  // we already sent an ok.
 }
 
-int PA_command(){
-  DEBUGPRINT()
-  int paIndex;
-  byte cfg;
-  
-  byte result=getParamData(&paIndex,1);
-  if (result == OK){
-    if (paIndex < CCx_PA_TABLESIZE){
-      cfg=Config.get(CONFIG_CONFIG_ID);
-      CCx.setPA(cfg, (byte)paIndex);
-      Config.set(CONFIG_PAINDEX ,paIndex);
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_PAINDEX),DEC); 
-    return(OK); 
-  }
-  return ERR;
-}
-
-int TH_command(){
-  DEBUGPRINT()
-  int threshold;
-
-  byte result=getParamData(&threshold,2);
-  if (result == OK){
-    if (threshold < 33 ){
-      Config.set(CONFIG_TX_THRESHOLD, threshold);
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_TX_THRESHOLD),DEC); 
-    return(OK); 
-  }
-  return ERR;
-}
-
-int BD_command(){
-  DEBUGPRINT()
-  int idx;
-  
-  byte result=getParamData(&idx,1);
-  if (result == OK){
-    if (idx < sizeof(baudRateTable)/sizeof(long)){
-      Config.set(CONFIG_BDINDEX, idx);
-      Serial.println("ok");
-      Serial.flush();
-      delay(1);      
-      Serial.begin(pgm_read_dword(&baudRateTable[idx]));
-      return NOTHING;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_BDINDEX),DEC);
-    return OK;
-  }
-  return ERR;
-}
-
-int MD_command(){
-  DEBUGPRINT()
-  int md;
-
-  byte result=getParamData(&md,1);
-  
-  if (result == OK){
-    if (md < 5){ 
-      Config.set(CONFIG_RFBEE_MODE,md); 
-      // handle sleep mode, all other modes are handled in loop() and started from IDLE
-      if (md ==SLEEP_MODE){
-        CCx.Strobe(CCx_SIDLE);
-        CCx.Strobe(CCx_SPWD);
-      }
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_RFBEE_MODE),DEC); 
-    return(OK); 
-  }
-  return ERR;
-}
-
-int FV_command(){
+int showFirmwareVersion(){
   DEBUGPRINT()
   Serial.println(((float) FIRMWAREVERSION)/10,1);
   return OK;
 }
 
-int HV_command(){
+int showHardwareVersion(){
   DEBUGPRINT()
   Serial.println(((float)Config.get(CONFIG_HW_VERSION))/10,1);
   return OK;
 }
 
-int RS_command(){
+int resetConfig(){
   DEBUGPRINT()
   Config.reset();
   return OK;
 }
 
-int CF_command(){
+int setCCxConfig(){
   DEBUGPRINT()
-  int cf;
-  
-  byte result=getParamData(&cf,1);
-  if (result == OK){
-    if (cf < CCx.NrOfConfigs() ){
-      Config.set(CONFIG_CONFIG_ID,cf); 
-      loadSettings();
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_CONFIG_ID),DEC); 
-    return(OK); 
-  }
-  return ERR;
+  // load the appropriate config table
+  byte cfg=Config.get(CONFIG_CONFIG_ID);
+  CCx.Setup(cfg);  
+  //CCx.ReadSetup();
+  // and restore the config settings
+  setMyAddress();
+  setAddressCheck();
+  setPowerAmplifier();
+  setRFBeeMode();
+  return OK;
 }
 
-int OF_command(){
-  DEBUGPRINT()
-  int of;
-  
-  byte result=getParamData(&of,1);
-  if (result == OK){
-    if ( of < 3 ){
-      Config.set(CONFIG_OUTPUT_FORMAT, of);
-      return OK;
-    }
-  }
-  if (result == NOTHING){
-    // return current setting
-    Serial.println(Config.get(CONFIG_OUTPUT_FORMAT),DEC); 
-    return(OK); 
-  }
-  return ERR;
-}
-
-int O0_command(){  // thats an o+zero
+int setSerialDataMode(){  
   DEBUGPRINT()
   serialMode = SERIALDATAMODE;
   return OK;
 }
 
-byte getParamData(int *result, int size){
-  DEBUGPRINT()
-  // try to read a number
-  byte c;
-  int value=0;
-  boolean valid=false;
-  int pos=4; // we start to read at pos 5 as 0-1 = AT and 2-3 = CMD
-  
-  if (serialData[pos] == SERIALCMDTERMINATOR )  // no data was available
-    return NOTHING;
-    
-  while (size-- > 0){
-    c=serialData[pos++];
-    if ( c== SERIALCMDTERMINATOR)  // no more data available 
-      break;
-    if ((c < '0') || (c > '9'))     // illegal char
-      return ERR;                     
-    // got a digit
-    valid=true;
-    value=(value*10)+ (c -'0');
-  } 
-  if (valid){
-    *result=value;
-    return OK;
+int setRFBeeMode(){
+   DEBUGPRINT()
+  // CCx_MCSM1 is configured to have TX and RX return to proper state on completion or timeout
+  switch (Config.get(CONFIG_RFBEE_MODE))
+  {
+  case IDLE_MODE:
+    CCx.Strobe(CCx_SIDLE);
+    break;
+  case TRANSMIT_MODE:
+    CCx.Strobe(CCx_SIDLE);
+    delay(1);
+    CCx.Write(CCx_MCSM1 ,   0x00 );//TXOFF_MODE->stay in IDLE
+    CCx.Strobe(CCx_SFTX);
+    break;
+  case RECEIVE_MODE:
+    CCx.Strobe(CCx_SIDLE);
+    delay(1);
+    CCx.Write(CCx_MCSM1 ,   0x0C );//RXOFF_MODE->stay in RX
+    CCx.Strobe(CCx_SFRX);
+    CCx.Strobe(CCx_SRX);
+    break;
+  case TRANSCEIVE_MODE:
+    CCx.Strobe(CCx_SIDLE);
+    delay(1);
+    CCx.Write(CCx_MCSM1 ,   0x0F );//RXOFF_MODE and TXOFF_MODE stay in RX
+    CCx.Strobe(CCx_SFTX);
+    CCx.Strobe(CCx_SFRX);
+    CCx.Strobe(CCx_SRX);
+    break;
+  case SLEEP_MODE:
+    CCx.Strobe(CCx_SIDLE);
+    CCx.Strobe(CCx_SPWD);
+    break;
+  default:		
+    break;
   }
-  return ERR;  
 }
+
   

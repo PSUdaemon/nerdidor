@@ -32,7 +32,6 @@ void transmitData(byte *txData,byte len, byte srcAddress, byte destAddress){
   CCx.Write(CCx_TXFIFO,srcAddress);
   CCx.WriteBurst(CCx_TXFIFO,txData, len); // write len bytes of the serialData buffer into the CCx txfifo
   CCx.Strobe(CCx_STX);
-  //delay(5);//give some time to STX,as the state would be changed to IDLE or RX in the loop.
 #ifdef DEBUG
   txData[len]='\0';
   Serial.println((char *)txData);
@@ -57,43 +56,45 @@ byte txFifoFree(){
 // receive data via RF, rxData must be at least CCx_PACKT_LEN bytes long
 int receiveData(byte *rxData, byte *len, byte *srcAddress, byte *destAddress, byte *rssi , byte *lqi){
   DEBUGPRINT()
-  
+
   byte size;
-    
-  byte stat=CCx.Read(CCx_RXBYTES,&size);
-    
-  //packet format: payloadLen + dstAddr+ srcAddr + data + RSSI + LQI
-  //               1byte        1byte     1byte   nbyte  1byte  1byte
-  //total len  =      1      +  (1   +       1) +   n  +  (1  +   1)
-  //payloadLen = length of addresses and data = 2 + n 
-  	
-  if(size > 5 && size <= CCx_PACKT_LEN)
-    CCx.Read(CCx_RXFIFO,len);
-  else {
-    errNo=1; // Error: Received invalid RF data size
-    CCx.Strobe(CCx_SFRX); // flush the RX buffer
-    return ERR;
-  }
-  
-  // payloadLen should be total size - 3
-  if (*len == size - 3){
+  byte stat;
+
+  do{
+    CCx.Read(CCx_RXBYTES,&size);
+
+    //packet format: payloadLen + dstAddr+ srcAddr + data + RSSI + LQI
+    //               1byte        1byte     1byte   nbyte  1byte  1byte
+    //total len  =      1      +  (1   +       1) +   n  +  (1  +   1)
+    //payloadLen = length of addresses and data = 2 + n 
+
+    if(size < 6 || size > CCx_PACKT_LEN){
+      errNo=1; // Error: Received invalid RF data size
+      break;
+    }
+    stat=CCx.Read(CCx_RXFIFO,len);
+    // payloadLen should be total size - 3
+    if (*len != (size - 3)){
+      errNo=2; // Error: Received invalid RF data
+      break;
+    }
     CCx.Read(CCx_RXFIFO,destAddress);
     CCx.Read(CCx_RXFIFO,srcAddress);
     *len -= 2;  // discard address bytes from payloadLen 
     CCx.ReadBurst(CCx_RXFIFO, rxData,*len);
-    rxData[*len]='\0';
     CCx.Read(CCx_RXFIFO,rssi);
     *rssi=CCx.RSSIdecode(*rssi);
-    CCx.Read(CCx_RXFIFO,lqi);
-   }
-   else{
-     errNo=2; // Error: Received invalid RF data
-     CCx.Strobe(CCx_SFRX); // flush the RX buffer
-     return ERR;
-   }
-   // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
-   if ((stat & 0xF0) == 0x60)//Modified by Icing. When overflows, STATE[2:0] = 110 
-     CCx.Strobe(CCx_SFRX);
-   return OK;
+    stat=CCx.Read(CCx_RXFIFO,lqi);
+    // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
+    if ((stat & 0xF0) == 0x60){ //Modified by Icing. When overflows, STATE[2:0] = 110
+       errNo=3; //Error RX overflow
+       break;
+    }
+    return OK;
+  }
+  while(0);
+  // if we get here, something went wrong
+  CCx.Strobe(CCx_SFRX); // flush the RX buffer
+  return ERR;
 }
 

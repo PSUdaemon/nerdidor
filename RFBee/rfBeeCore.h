@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 18, 2010
+//  Version: June 22, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -26,11 +26,5 @@
 #include "debug.h"
 #include "globals.h"
 #include "CCx.h"
-
-//void transmitData(byte *txData,byte len, byte srcAddress, byte destAddress);
-//int receiveData(byte *rxData, byte &len, byte &srcAddress, byte &destAddress, byte &rssi , byte &lqi);
-//byte txFifoFree();
-
-
 
 #endif
