@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 18, 2010
+//  Version: June 28, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -70,6 +70,7 @@ int receiveData(byte *rxData, byte *len, byte *srcAddress, byte *destAddress, by
 
     if(size < 6 || size > CCx_PACKT_LEN){
       errNo=1; // Error: Received invalid RF data size
+      Serial.println(size,DEC);
       break;
     }
     stat=CCx.Read(CCx_RXFIFO,len);

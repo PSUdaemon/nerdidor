@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: May 22, 2010
+//  Version: June 28, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,6 @@
 #include "debug.h"
 
 
-#define CCx_PACKT_LEN 64
 #define CCx_PA_TABLESIZE 8
 
 
@@ -121,6 +120,7 @@
 
 #define CCx_FIFO_SIZE    0x40 // 64 bytes
 
+#define CCx_PACKT_LEN   (CCx_FIFO_SIZE - 3) // see section 15.3 of the datasheet
 
 class CCX
 {
