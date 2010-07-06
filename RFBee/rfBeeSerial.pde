@@ -349,12 +349,17 @@ int setRFBeeMode(){
     CCx.Strobe(CCx_SRX);
     break;
   case SLEEP_MODE:
+    Serial.println("going to sleep");
     CCx.Strobe(CCx_SIDLE);
     CCx.Strobe(CCx_SPWD);
+    sleepNow(SLEEP_MODE_IDLE);
+    //sleepNow(SLEEP_MODE_PWR_DOWN);
+    Serial.println("just woke up");
     break;
   default:		
     break;
   }
+  return OK;
 }
 
   

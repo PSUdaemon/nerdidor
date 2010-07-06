@@ -101,7 +101,7 @@ static AT_Command_t atCommands[] PROGMEM =
   { TH_label, CONFIG_TX_THRESHOLD, 2 , 32, false, 0 },            // TH- threshold of transmitting    (0~32) 
   { OF_label, CONFIG_OUTPUT_FORMAT, 1 , 3 , false, 0 },           // Output Format                    (0: payload only, 1: source, dest, payload ,  3: payload len, source, dest, payload, rssi, lqi )
 // Mode 
-  { MD_label, CONFIG_RFBEE_MODE, 1 , 3 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:sleep)
+  { MD_label, CONFIG_RFBEE_MODE, 1 , 4 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:sleep)
   { O0_label, 0, 0 , 0 , true, setSerialDataMode },              // thats o+ zero, go back to online mode
 // Diagnostics:
   { FV_label, 0, 0 , 0 , true, showFirmwareVersion },           // firmware version

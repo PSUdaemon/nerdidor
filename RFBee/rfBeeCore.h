@@ -26,5 +26,8 @@
 #include "debug.h"
 #include "globals.h"
 #include "CCx.h"
+#include <avr/power.h>
+#include <avr/sleep.h>
+
 
 #endif

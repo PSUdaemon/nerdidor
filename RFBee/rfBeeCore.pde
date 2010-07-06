@@ -60,42 +60,64 @@ int receiveData(byte *rxData, byte *len, byte *srcAddress, byte *destAddress, by
   byte size;
   byte stat;
 
-  do{
-    CCx.Read(CCx_RXBYTES,&size);
+  stat=CCx.Read(CCx_RXFIFO,len);
+  CCx.Read(CCx_RXFIFO,destAddress);
+  CCx.Read(CCx_RXFIFO,srcAddress);
+  *len -= 2;  // discard address bytes from payloadLen 
+  CCx.ReadBurst(CCx_RXFIFO, rxData,*len);
+  CCx.Read(CCx_RXFIFO,rssi);
+  *rssi=CCx.RSSIdecode(*rssi);
+  stat=CCx.Read(CCx_RXFIFO,lqi);
+  // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
+  if ((stat & 0xF0) == 0x60){ //Modified by Icing. When overflows, STATE[2:0] = 110
+     errNo=3; //Error RX overflow
+     CCx.Strobe(CCx_SFRX); // flush the RX buffer
+     return ERR;
+   }
+  return OK;
+}
 
-    //packet format: payloadLen + dstAddr+ srcAddr + data + RSSI + LQI
-    //               1byte        1byte     1byte   nbyte  1byte  1byte
-    //total len  =      1      +  (1   +       1) +   n  +  (1  +   1)
-    //payloadLen = length of addresses and data = 2 + n 
-
-    if(size < 6 || size > CCx_PACKT_LEN){
-      errNo=1; // Error: Received invalid RF data size
-      Serial.println(size,DEC);
-      break;
-    }
-    stat=CCx.Read(CCx_RXFIFO,len);
-    // payloadLen should be total size - 3
-    if (*len != (size - 3)){
-      errNo=2; // Error: Received invalid RF data
-      break;
-    }
-    CCx.Read(CCx_RXFIFO,destAddress);
-    CCx.Read(CCx_RXFIFO,srcAddress);
-    *len -= 2;  // discard address bytes from payloadLen 
-    CCx.ReadBurst(CCx_RXFIFO, rxData,*len);
-    CCx.Read(CCx_RXFIFO,rssi);
-    *rssi=CCx.RSSIdecode(*rssi);
-    stat=CCx.Read(CCx_RXFIFO,lqi);
-    // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
-    if ((stat & 0xF0) == 0x60){ //Modified by Icing. When overflows, STATE[2:0] = 110
-       errNo=3; //Error RX overflow
-       break;
-    }
-    return OK;
-  }
-  while(0);
-  // if we get here, something went wrong
-  CCx.Strobe(CCx_SFRX); // flush the RX buffer
-  return ERR;
+// power saving
+void sleepNow(byte mode)
+{
+    /* Now is the time to set the sleep mode. In the Atmega8 datasheet
+     * http://www.atmel.com/dyn/resources/prod_documents/doc2486.pdf on page 35
+     * there is a list of sleep modes which explains which clocks and 
+     * wake up sources are available in which sleep modus.
+     *
+     * In the avr/sleep.h file, the call names of these sleep modus are to be found:
+     *
+     * The 5 different modes are:
+     *     SLEEP_MODE_IDLE         -the least power savings 
+     *     SLEEP_MODE_ADC
+     *     SLEEP_MODE_PWR_SAVE
+     *     SLEEP_MODE_STANDBY
+     *     SLEEP_MODE_PWR_DOWN     -the most power savings
+     *
+     *  the power reduction management <avr/power.h>  is described in 
+     *  http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
+     */  
+ 
+  set_sleep_mode(mode);   // sleep mode is set here
+ 
+  sleep_enable();          // enables the sleep bit in the mcucr register
+                             // so sleep is possible. just a safety pin 
+ 
+  power_adc_disable();
+  power_spi_disable();
+  power_timer0_disable();
+  power_timer1_disable();
+  power_timer2_disable();
+  power_twi_disable();
+ 
+ 
+  sleep_mode();            // here the device is actually put to sleep!!
+ 
+                             // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+  sleep_disable();         // first thing after waking from sleep:
+                            // disable sleep...
+ 
+  power_all_enable();
+ 
 }
 
