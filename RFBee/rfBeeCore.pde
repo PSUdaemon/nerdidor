@@ -41,26 +41,33 @@ void transmitData(byte *txData,byte len, byte srcAddress, byte destAddress){
 
 // read available txFifo size and handle underflow (which should not have occured anyway)
 byte txFifoFree(){
+  DEBUGPRINT()
   byte stat;
+  byte size;
   
-  CCx.Read(CCx_TXBYTES, &stat);
+  stat=CCx.Read(CCx_TXBYTES, &size);
   // handle a potential TX underflow by flushing the TX FIFO as described in section 10.1 of the CC 1100 datasheet
   if (stat & 0x80){
     CCx.Strobe(CCx_SFTX);
-    stat=CCx.Read(CCx_TXBYTES,&stat);
+    stat=CCx.Read(CCx_TXBYTES,&size);
   }
-  
-  return (CCx_FIFO_SIZE - (stat & 0x7F));
+#ifdef DEBUG
+  Serial.println(CCx_FIFO_SIZE - size,DEC);
+#endif
+  return (CCx_FIFO_SIZE - size);
 }
 
 // receive data via RF, rxData must be at least CCx_PACKT_LEN bytes long
 int receiveData(byte *rxData, byte *len, byte *srcAddress, byte *destAddress, byte *rssi , byte *lqi){
   DEBUGPRINT()
 
-  byte size;
   byte stat;
 
   stat=CCx.Read(CCx_RXFIFO,len);
+#ifdef DEBUG
+  Serial.print("length:");
+  Serial.println(*len,DEC);
+#endif
   CCx.Read(CCx_RXFIFO,destAddress);
   CCx.Read(CCx_RXFIFO,srcAddress);
   *len -= 2;  // discard address bytes from payloadLen 
