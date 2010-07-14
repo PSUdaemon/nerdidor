@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 28, 2010
+//  Version: July 14, 2010
 //
 //  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 //  as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
@@ -35,6 +35,7 @@
 
 #define GDO0 2 // used for polling the RF received data
 
+
 void setup(){
     if (Config.initialized() != OK) 
     {
@@ -54,19 +55,28 @@ void setup(){
 void loop(){
      
   if (Serial.available() > 0){
+    sleepCounter=1000; // reset the sleep counter
     if (serialMode == SERIALCMDMODE)
       readSerialCmd();
     else
       readSerialData();
   }
+
+//#ifdef USE_INTERRUPT_RECEIVE   
+//  if (state==RECV_WAITING)
+//     writeSerialData();
+//#else // polling mode
+  if ( digitalRead(GDO0) == HIGH ) {
+      writeSerialData();
+      sleepCounter++; // delay sleep
+  }
+  sleepCounter--;
   
-#ifdef USE_INTERRUPT_RECEIVE   
-  if (state==RECV_WAITING)
-     writeSerialData();
-#else // polling mode
-  if ( digitalRead(GDO0) == HIGH ) 
-    writeSerialData();
-#endif
+  // check if we can go to sleep again, going into low power too early will result in lost data in the CCx fifo.
+  if ((sleepCounter == 0) && (Config.get(CONFIG_RFBEE_MODE) == LOWPOWER_MODE))
+    lowPowerOn();
+      
+//#endif
 }
 
 
@@ -77,28 +87,29 @@ void rfBeeInit(){
     setCCxConfig();
    
     serialMode=SERIALDATAMODE;
+    sleepCounter=0;
     
-#ifdef USE_INTERRUPT_RECEIVE   
-    state=IDLE;
+//#ifdef USE_INTERRUPT_RECEIVE   
+//    state=IDLE;
     attachInterrupt(0, ISRVreceiveData, RISING);  //GD00 is located on pin 2, which results in INT 0
-#else
+//#else
     pinMode(GDO0,INPUT);// used for polling the RF received data
-#endif 
+//#endif 
 
 }
 
 // handle interrupt
-#ifdef INTERRUPT_RECEIVE
+//#ifdef INTERRUPT_RECEIVE
 
 void ISRVreceiveData(){
-  DEBUGPRINT()
-  
-  if (state != IDLE)
-    state=RECV_WAITING;
-  else
-    writeSerialData();
+  //DEBUGPRINT()
+  sleepCounter=10;
+//  if (state != IDLE)
+//    state=RECV_WAITING;
+// else
+//   writeSerialData();
 }
 
-#endif
+//#endif
 
 

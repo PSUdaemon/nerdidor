@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 22, 2010
+//  Version: July 14, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -52,6 +52,7 @@ int resetConfig();
 
 byte serialData[BUFFLEN+1]; // 1 extra so we can easily add a /0 when doing a debug print ;-)
 byte serialMode;
+volatile int sleepCounter;
 
 
 // RFbee AT commands
@@ -99,9 +100,9 @@ static AT_Command_t atCommands[] PROGMEM =
 // Serial
   { BD_label, CONFIG_BDINDEX, 1 , 3, true, changeUartBaudRate },  // Uart baudrate                    (0: 9600 , 1:19200, 2:38400 ,3:115200)
   { TH_label, CONFIG_TX_THRESHOLD, 2 , 32, false, 0 },            // TH- threshold of transmitting    (0~32) 
-  { OF_label, CONFIG_OUTPUT_FORMAT, 1 , 3 , false, 0 },           // Output Format                    (0: payload only, 1: source, dest, payload ,  3: payload len, source, dest, payload, rssi, lqi )
+  { OF_label, CONFIG_OUTPUT_FORMAT, 1 , 3 , false, 0 },           // Output Format                    (0: payload only, 1: source, dest, payload ,  2: payload len, source, dest, payload, rssi, lqi, 3: same as 2, but all except for payload as decimal and separated by comma's )
 // Mode 
-  { MD_label, CONFIG_RFBEE_MODE, 1 , 4 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:sleep)
+  { MD_label, CONFIG_RFBEE_MODE, 1 , 5 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:lowpower, 5:sleep)
   { O0_label, 0, 0 , 0 , true, setSerialDataMode },              // thats o+ zero, go back to online mode
 // Diagnostics:
   { FV_label, 0, 0 , 0 , true, showFirmwareVersion },           // firmware version
@@ -117,7 +118,7 @@ static char error_0[] PROGMEM="no error";
 static char error_1[] PROGMEM="received invalid RF data size";
 static char error_2[] PROGMEM="received invalid RF data";
 static char error_3[] PROGMEM="RX buffer overflow";
-
+static char error_4[] PROGMEM="CRC check failed";
 
 static char *error_codes[] PROGMEM={
   error_0,
@@ -135,7 +136,8 @@ long baudRateTable[] PROGMEM= {9600,19200,38400,115200};
 #define TRANSMIT_MODE 1     
 #define RECEIVE_MODE 2 
 #define TRANSCEIVE_MODE 3
-#define SLEEP_MODE 4  
+#define LOWPOWER_MODE 4
+#define SLEEP_MODE 5  
 
 #ifdef INTERRUPT_RECEIVE
 volatile enum state

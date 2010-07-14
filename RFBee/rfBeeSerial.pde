@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 22, 2010
+//  Version: July 14, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -222,6 +222,8 @@ void writeSerialData(){
   byte rssi;
   byte lqi;
   int result;
+  byte of;
+ 
   
   result=receiveData(rxData, &len, &srcAddress, &destAddress, &rssi , &lqi);
   
@@ -229,24 +231,47 @@ void writeSerialData(){
       writeSerialError();
       return;
   }
+  
+  if (result == NOTHING)
+    return;
 // write to serial based on output format:
 //  0: payload only
 //  1: source, dest, payload
 //  2: payload len, source, dest, payload, rssi, lqi
-  if( Config.get(CONFIG_OUTPUT_FORMAT) > 1 ) 
-     Serial.print(len); // len is size of data EXCLUDING address bytes !
-  if( Config.get(CONFIG_OUTPUT_FORMAT) > 0 ) {
+//  3: payload len, source, dest, payload,",", rssi (DEC),",",lqi (DEC)
+  of=Config.get(CONFIG_OUTPUT_FORMAT);
+  if(of == 3){
+    Serial.print(len,DEC); // len is size of data EXCLUDING address bytes !
+    Serial.print(',');
     // write source & destination
-    Serial.print(srcAddress);
-    Serial.print(destAddress);
-  }  
-  // write data 
-  Serial.write(rxData,len); 
-  // write rssi en lqi
-  if( Config.get(CONFIG_OUTPUT_FORMAT) > 1 ) {
-    Serial.print(rssi);
-    Serial.print(lqi);
-  }  
+    Serial.print(srcAddress,DEC);
+    Serial.print(',');
+    Serial.print(destAddress,DEC);
+    Serial.print(',');
+    // write data 
+    Serial.write(rxData,len); 
+    Serial.print(',');
+    // write rssi en lqi
+    Serial.print(rssi,DEC);
+    Serial.print(',');
+    Serial.println(lqi,DEC);
+    } 
+  else{
+    if( of > 1 ) 
+       Serial.print(len); // len is size of data EXCLUDING address bytes !
+    if( of > 0 ) {
+      // write source & destination
+      Serial.print(srcAddress);
+      Serial.print(destAddress);
+    }  
+    // write data 
+    Serial.write(rxData,len); 
+    // write rssi en lqi
+    if( of > 1 ) {
+      Serial.print(rssi);
+      Serial.print(lqi);
+    } 
+  }
 }
 
 
@@ -348,6 +373,9 @@ int setRFBeeMode(){
     CCx.Strobe(CCx_SFRX);
     CCx.Strobe(CCx_SRX);
     break;
+  case LOWPOWER_MODE:
+    CCx.Strobe(CCx_SIDLE);
+    break;  
   case SLEEP_MODE:
     Serial.println("going to sleep");
     CCx.Strobe(CCx_SIDLE);
@@ -355,6 +383,7 @@ int setRFBeeMode(){
     sleepNow(SLEEP_MODE_IDLE);
     //sleepNow(SLEEP_MODE_PWR_DOWN);
     Serial.println("just woke up");
+    CCx.Strobe(CCx_SIDLE);
     break;
   default:		
     break;

@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 28, 2010
+//  Version: July 14, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -75,6 +75,12 @@ int receiveData(byte *rxData, byte *len, byte *srcAddress, byte *destAddress, by
   CCx.Read(CCx_RXFIFO,rssi);
   *rssi=CCx.RSSIdecode(*rssi);
   stat=CCx.Read(CCx_RXFIFO,lqi);
+  // check checksum ok
+  if ((*lqi & 0x80)==0){
+    return NOTHING;
+  }
+  *lqi=*lqi & 0x7F; // strip off the CRC bit
+  
   // handle potential RX overflows by flushing the RF FIFO as described in section 10.1 of the CC 1100 datasheet
   if ((stat & 0xF0) == 0x60){ //Modified by Icing. When overflows, STATE[2:0] = 110
      errNo=3; //Error RX overflow
@@ -104,7 +110,8 @@ void sleepNow(byte mode)
      *  the power reduction management <avr/power.h>  is described in 
      *  http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
      */  
- 
+  DEBUGPRINT()
+  
   set_sleep_mode(mode);   // sleep mode is set here
  
   sleep_enable();          // enables the sleep bit in the mcucr register
@@ -127,4 +134,15 @@ void sleepNow(byte mode)
   power_all_enable();
  
 }
+
+void lowPowerOn(){
+  DEBUGPRINT()
+  CCx.Write(CCx_WORCTRL,0x78);  // set WORCRTL.RC_PD to 0 to enable the wakeup oscillator
+  CCx.Strobe(CCx_SWOR);
+  sleepNow(SLEEP_MODE_IDLE);
+  //CCx.Strobe(CCx_SIDLE);
+}
+
+
+  
 
