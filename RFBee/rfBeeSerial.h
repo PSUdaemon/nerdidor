@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: July 14, 2010
+//  Version: July 16, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,7 @@ int setRFBeeMode();
 int showFirmwareVersion();
 int showHardwareVersion();
 int resetConfig();
+int setSleepMode();
 
 
 byte serialData[BUFFLEN+1]; // 1 extra so we can easily add a /0 when doing a debug print ;-)
@@ -71,6 +72,7 @@ static char RS_label[] PROGMEM="RS";
 static char CF_label[] PROGMEM="CF";
 static char OF_label[] PROGMEM="OF";
 static char O0_label[] PROGMEM="O0";
+static char SL_label[] PROGMEM="SL";
 
 // Supported commands, Commands and parameters in ASCII
 // Example: ATDA14 means: change the RF module Destination Address to 14
@@ -102,8 +104,9 @@ static AT_Command_t atCommands[] PROGMEM =
   { TH_label, CONFIG_TX_THRESHOLD, 2 , 32, false, 0 },            // TH- threshold of transmitting    (0~32) 
   { OF_label, CONFIG_OUTPUT_FORMAT, 1 , 3 , false, 0 },           // Output Format                    (0: payload only, 1: source, dest, payload ,  2: payload len, source, dest, payload, rssi, lqi, 3: same as 2, but all except for payload as decimal and separated by comma's )
 // Mode 
-  { MD_label, CONFIG_RFBEE_MODE, 1 , 5 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:lowpower, 5:sleep)
+  { MD_label, CONFIG_RFBEE_MODE, 1 , 4 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:lowpower)
   { O0_label, 0, 0 , 0 , true, setSerialDataMode },              // thats o+ zero, go back to online mode
+  { SL_label, 0, 0 , 0 , true, setSleepMode },                   // put the rfBee to sleep
 // Diagnostics:
   { FV_label, 0, 0 , 0 , true, showFirmwareVersion },           // firmware version
   { HV_label, 0, 0 , 0 , true, showHardwareVersion },           // hardware version

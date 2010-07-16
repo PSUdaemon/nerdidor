@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: July 14, 2010
+//  Version: July 16, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -114,7 +114,7 @@ void readSerialCmd(){
   char data;
   static byte pos=0;
   
-  while(Serial.available()){
+  while(Serial.available() && (serialMode == SERIALCMDMODE)){      //ATSL changes commandmode while there is a char waiting in the serial buffer.
     result=NOTHING;
     data=Serial.read();
     serialData[pos++]=data; //serialData is our global serial buffer
@@ -376,19 +376,23 @@ int setRFBeeMode(){
   case LOWPOWER_MODE:
     CCx.Strobe(CCx_SIDLE);
     break;  
-  case SLEEP_MODE:
-    Serial.println("going to sleep");
-    CCx.Strobe(CCx_SIDLE);
-    CCx.Strobe(CCx_SPWD);
-    sleepNow(SLEEP_MODE_IDLE);
-    //sleepNow(SLEEP_MODE_PWR_DOWN);
-    Serial.println("just woke up");
-    CCx.Strobe(CCx_SIDLE);
-    break;
   default:		
     break;
   }
   return OK;
+}
+
+// put the rfbee into sleep
+int setSleepMode(){
+  Serial.println("going to sleep");
+  CCx.Strobe(CCx_SIDLE);
+  CCx.Strobe(CCx_SPWD);
+  sleepNow(SLEEP_MODE_IDLE);
+  //sleepNow(SLEEP_MODE_PWR_DOWN);
+  Serial.println("just woke up");
+  setRFBeeMode();
+  setSerialDataMode();
+  return NOTHING;
 }
 
   
