@@ -155,7 +155,14 @@ void readSerialData(){
   if (len > BUFFLEN ) len=BUFFLEN; //only process at most BUFFLEN chars
   // check how much space we have in the TX fifo
   fifoSize=txFifoFree();// the fifoSize should be the number of bytes in TX FIFO
- 
+  
+  if(fifoSize <= 0){
+    Serial.flush();
+    //CCx.Strobe(CCx_SFTX);
+    plus = 0;
+    pos = 0;
+    return;
+  }
   if (len > fifoSize)  len=fifoSize;  // don't overflow the TX fifo
     
   for(byte i=plus+pos; i< len;i++){
