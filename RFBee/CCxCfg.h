@@ -171,7 +171,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x23,   // FREQ2     Frequency control word, high byte.
     0x31,   // FREQ1     Frequency control word, middle byte.
     0x3B,   // FREQ0     Frequency control word, low byte.
-    0xF5,   // MDMCFG4   Modem configuration.
+    0xB5,   // MDMCFG4   Modem configuration. Broaden the receiver channnel filter bandwidth to 116kHz,so that data could be received much easier at 1.2bps
     0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
@@ -304,7 +304,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x21,   // FREQ2     Frequency control word, high byte.
     0x62,   // FREQ1     Frequency control word, middle byte.
     0x76,   // FREQ0     Frequency control word, low byte.
-    0xF5,   // MDMCFG4   Modem configuration.
+    0xB5,   // MDMCFG4   Modem configuration.Broaden the receiver channnel filter bandwidth to 116kHz,so that data could be received much easier.
     0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.

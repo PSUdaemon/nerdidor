@@ -39,7 +39,7 @@
 #define CONFIG_OUTPUT_FORMAT     10 // output format to use
 #define CONFIG_RFBEE_MODE        11 // rfBee operating mode (e.g. transmit/receive/idle)
 // marker
-#define CONFIG_RFBEE_MARKER_VALUE 0xAB
+#define CONFIG_RFBEE_MARKER_VALUE 0xAA
 
 class CONFIG
 {
