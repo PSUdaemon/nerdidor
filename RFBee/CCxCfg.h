@@ -143,10 +143,10 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
 // Crystal accuracy = 10 ppm
 // X-tal frequency = 26 MHz
 // RF output power = 0 dBm
-// RX filterbandwidth = 58 kHz
+// RX filterbandwidth = 100 kHz
 // Deviation = 5.2 kHz
-// Datarate = 1.2 kBaud
-// Modulation = (0) 2-FSK
+// Datarate = 4.8 kBaud
+// Modulation = (0) GFSK
 // Manchester enable = (0) Manchester disabled
 // RF Frequency = 914.999969 MHz
 // Channel spacing = 199.951172 kHz
@@ -168,22 +168,22 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
   {
     0x06,   // FSCTRL1   Frequency synthesizer control.
     0x00,   // FSCTRL0   Frequency synthesizer control.
-    0x23,   // FREQ2     Frequency control word, high byte.
-    0x31,   // FREQ1     Frequency control word, middle byte.
-    0x3B,   // FREQ0     Frequency control word, low byte.
-    0xB5,   // MDMCFG4   Modem configuration. Broaden the receiver channnel filter bandwidth to 116kHz,so that data could be received much easier at 1.2bps
+    0x21,   //0x23 FREQ2     Frequency control word, high byte.
+    0x65,   //0x31 FREQ1     Frequency control word, middle byte.
+    0x6A,   //0x3B FREQ0     Frequency control word, low byte.
+    0xC7,   //0xB5 MDMCFG4   Modem configuration. Broaden the receiver channnel filter bandwidth to 116kHz,so that data could be received much easier at 1.2bps
     0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
     0xF8,   // MDMCFG0   Modem configuration.
     0x00,   // CHANNR    Channel number.
-    0x15,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).
+    0x40,   //0x15 DEVIATN   Modem deviation setting (when FSK modulation is enabled).
     0x56,   // FREND1    Front end RX configuration.
     0x10,   // FREND0    Front end TX configuration.
     0x18,   // MCSM0     Main Radio Control State Machine configuration.
     0x16,   // FOCCFG    Frequency Offset Compensation Configuration.
     0x6C,   // BSCFG     Bit synchronization Configuration.
-    0x03,   // AGCCTRL2  AGC control.
+    0x43,   //0x03 AGCCTRL2  AGC control.
     0x40,   // AGCCTRL1  AGC control.
     0x91,   // AGCCTRL0  AGC control.
     0xE9,   // FSCAL3    Frequency synthesizer calibration.
@@ -276,9 +276,9 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
 // Crystal accuracy = 10 ppm
 // X-tal frequency = 26 MHz
 // RF output power = 0 dBm
-// RX filterbandwidth = 58 kHz
-// Deviation = 5.2 kHz
-// Datarate = 1.2 kBaud
+// RX filterbandwidth = 100 kHz
+// Deviation = 25 kHz
+// Datarate = 4.8 kBaud
 // Modulation = (0) GFSK
 // Manchester enable = (0) Manchester disabled
 // RF Frequency = 867.999939 MHz
@@ -304,19 +304,19 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x21,   // FREQ2     Frequency control word, high byte.
     0x62,   // FREQ1     Frequency control word, middle byte.
     0x76,   // FREQ0     Frequency control word, low byte.
-    0xB5,   // MDMCFG4   Modem configuration.Broaden the receiver channnel filter bandwidth to 116kHz,so that data could be received much easier.
+    0xC7,   //B5 MDMCFG4   Modem configuration.Broaden the receiver channnel filter bandwidth to 116kHz,so that data could be received much easier.
     0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
     0xF8,   // MDMCFG0   Modem configuration.
     0x00,   // CHANNR    Channel number.
-    0x15,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).
+    0x40,   //0x15 DEVIATN   Modem deviation setting (when FSK modulation is enabled).
     0x56,   // FREND1    Front end RX configuration.
     0x10,   // FREND0    Front end TX configuration.
     0x18,   // MCSM0     Main Radio Control State Machine configuration.
     0x16,   // FOCCFG    Frequency Offset Compensation Configuration.
     0x6C,   // BSCFG     Bit synchronization Configuration.
-    0x03,   // AGCCTRL2  AGC control.
+    0x43,   //0x03 AGCCTRL2  AGC control.
     0x40,   // AGCCTRL1  AGC control.
     0x91,   // AGCCTRL0  AGC control.
     0xE9,   // FSCAL3    Frequency synthesizer calibration.

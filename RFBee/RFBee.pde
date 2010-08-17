@@ -18,8 +18,7 @@
 
 
 #define FIRMWAREVERSION 11 // 1.1  , version number needs to fit in byte (0~255) to be able to store it into config
-//#define FACTORY_SELFTEST
-//#define INTERRUPT_RECEIVE
+#define FACTORY_SELFTEST
 //#define DEBUG 
 
 
@@ -62,10 +61,6 @@ void loop(){
       readSerialData();
   }
 
-//#ifdef USE_INTERRUPT_RECEIVE   
-//  if (state==RECV_WAITING)
-//     writeSerialData();
-//#else // polling mode
   if ( digitalRead(GDO0) == HIGH ) {
       writeSerialData();
       sleepCounter++; // delay sleep
@@ -76,7 +71,6 @@ void loop(){
   if ((sleepCounter == 0) && (Config.get(CONFIG_RFBEE_MODE) == LOWPOWER_MODE))
     lowPowerOn();
       
-//#endif
 }
 
 
@@ -89,27 +83,16 @@ void rfBeeInit(){
     serialMode=SERIALDATAMODE;
     sleepCounter=0;
     
-//#ifdef USE_INTERRUPT_RECEIVE   
-//    state=IDLE;
     attachInterrupt(0, ISRVreceiveData, RISING);  //GD00 is located on pin 2, which results in INT 0
-//#else
+
     pinMode(GDO0,INPUT);// used for polling the RF received data
-//#endif 
 
 }
 
 // handle interrupt
-//#ifdef INTERRUPT_RECEIVE
-
 void ISRVreceiveData(){
   //DEBUGPRINT()
   sleepCounter=10;
-//  if (state != IDLE)
-//    state=RECV_WAITING;
-// else
-//   writeSerialData();
 }
-
-//#endif
 
 

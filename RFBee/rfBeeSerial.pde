@@ -226,13 +226,13 @@ void writeSerialData(){
   byte len;
   byte srcAddress;
   byte destAddress;
-  byte rssi;
+  char rssi;
   byte lqi;
   int result;
   byte of;
  
   
-  result=receiveData(rxData, &len, &srcAddress, &destAddress, &rssi , &lqi);
+  result=receiveData(rxData, &len, &srcAddress, &destAddress, (byte *)&rssi , &lqi);
   
   if (result == ERR) {
       writeSerialError();
@@ -259,7 +259,7 @@ void writeSerialData(){
     Serial.write(rxData,len); 
     Serial.print(',');
     // write rssi en lqi
-    Serial.print(rssi,DEC);
+    Serial.print((int)rssi);
     Serial.print(',');
     Serial.println(lqi,DEC);
     } 
