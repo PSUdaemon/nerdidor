@@ -69,8 +69,9 @@ void loop(){
   
   // check if we can go to sleep again, going into low power too early will result in lost data in the CCx fifo.
   if ((sleepCounter == 0) && (Config.get(CONFIG_RFBEE_MODE) == LOWPOWER_MODE))
+    Serial.println("low power on");
     lowPowerOn();
-      
+    Serial.println("wake up");
 }
 
 
