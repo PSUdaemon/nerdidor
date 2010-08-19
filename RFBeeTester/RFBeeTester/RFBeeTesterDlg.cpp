@@ -50,6 +50,18 @@ END_MESSAGE_MAP()
 
 CRFBeeTesterDlg::CRFBeeTesterDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CRFBeeTesterDlg::IDD, pParent)
+	, m_threshold(0)
+	, m_CF0RSSI(0)
+	, m_CF1RSSI(0)
+	, m_CF2RSSI(0)
+	, m_CF3RSSI(0)
+	, m_CF0State(_T(""))
+	, m_CF1State(_T(""))
+	, m_CF2State(_T(""))
+	, m_CF3State(_T(""))
+	, m_allState(_T(""))
+	, m_serialReceiveData(_T(""))
+	, m_isTimeElapsed(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -61,6 +73,22 @@ void CRFBeeTesterDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_COMNUM, m_comNum);
 	DDX_Control(pDX, IDC_COMBO_BAUDRATE, m_baudRate);
 	DDX_Control(pDX, IDC_BUTTON_OPENCOM, m_openCom);
+	DDX_Text(pDX, IDC_EDIT_THRESHOLD, m_threshold);
+	DDV_MinMaxInt(pDX, m_threshold, -200, 100);
+	DDX_Text(pDX, IDC_EDIT_CF0VALUE, m_CF0RSSI);
+	DDV_MinMaxInt(pDX, m_CF0RSSI, -200, 100);
+	DDX_Text(pDX, IDC_EDIT_CF1VALUE, m_CF1RSSI);
+	DDV_MinMaxInt(pDX, m_CF1RSSI, -200, 100);
+	DDX_Text(pDX, IDC_EDIT_CF2VALUE, m_CF2RSSI);
+	DDV_MinMaxInt(pDX, m_CF2RSSI, -200, 100);
+	DDX_Text(pDX, IDC_EDIT_CF3VALUE, m_CF3RSSI);
+	DDV_MinMaxInt(pDX, m_CF3RSSI, -200, 100);
+	DDX_Text(pDX, IDC_EDIT_CF0STATE, m_CF0State);
+	DDX_Text(pDX, IDC_EDIT_CF1STATE, m_CF1State);
+	DDX_Text(pDX, IDC_EDIT_CF2STATE, m_CF2State);
+	DDX_Text(pDX, IDC_EDIT_CF3STATE, m_CF3State);
+	DDX_Text(pDX, IDC_EDIT_ALLSTATE, m_allState);
+	DDX_Control(pDX, IDC_EDIT_RECEIVEDATA, m_displayReceiveData);
 }
 
 BEGIN_MESSAGE_MAP(CRFBeeTesterDlg, CDialogEx)
@@ -70,6 +98,11 @@ BEGIN_MESSAGE_MAP(CRFBeeTesterDlg, CDialogEx)
 	//ON_BN_CLICKED(IDC_BUTTON1, &CRFBeeTesterDlg::OnBnClickedButton1)
 	//ON_BN_CLICKED(IDC_BUTTON2, &CRFBeeTesterDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON_OPENCOM, &CRFBeeTesterDlg::OnBnClickedButtonOpencom)
+	ON_BN_CLICKED(IDC_BUTTON_SETTHRESHOLD, &CRFBeeTesterDlg::OnBnClickedButtonSetthreshold)
+	ON_BN_CLICKED(IDC_BUTTON_TESTCF0, &CRFBeeTesterDlg::OnBnClickedButtonTestCF0)
+	ON_BN_CLICKED(IDC_BUTTON_CLEARRECEIVEDATA, &CRFBeeTesterDlg::OnBnClickedButtonClearReceiveData)
+	ON_WM_TIMER()
+	ON_BN_CLICKED(IDOK, &CRFBeeTesterDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -162,30 +195,6 @@ HCURSOR CRFBeeTesterDlg::OnQueryDragIcon()
 
 
 
-//void CRFBeeTesterDlg::OnBnClickedButton1()
-//{
-//	// TODO: 在此添加控件通知处理程序代码
-//	m_mscomm.put_CommPort(2);//选择COM?
-//	
-//	m_mscomm.put_InBufferSize(1024); //设置输入缓冲区的大小，Bytes
-//
-//	m_mscomm.put_OutBufferSize(512); //设置输入缓冲区的大小，Bytes//
-//
-//
-//	m_mscomm.put_InputMode(0); //设置输入方式为1-二进制方式,0-文本方式
-//
-//	m_mscomm.put_Settings(_T("9600,n,8,1")); //设置波特率等参数
-//
-//
-//
-//	m_mscomm.put_RThreshold(1); //为1表示有一个字符引发一个事件
-//
-//	m_mscomm.put_InputLen(100);
-//
-//	if(!m_mscomm.get_PortOpen()){ //打开串口
-//		m_mscomm.put_PortOpen(TRUE);
-//	}
-//}
 
 
 BEGIN_EVENTSINK_MAP(CRFBeeTesterDlg, CDialogEx)
@@ -201,20 +210,16 @@ void CRFBeeTesterDlg::OnCommMscomm1()
 	{
 	case 2:
 		str = CString(m_mscomm.get_Input().bstrVal);
-		MessageBox(str);
+		//MessageBox(str);
+		m_serialReceiveData += str; 
+		
+		//display the received data on the window
+		DisplayReceivedData(str);
 		break;
 	default:
 		break;
 	}
 }
-
-
-//void CRFBeeTesterDlg::OnBnClickedButton2()
-//{
-//	// TODO: 在此添加控件通知处理程序代码
-//	CString str("hello world\r\n");
-//	m_mscomm.put_Output(COleVariant(str));
-//}
 
 
 void CRFBeeTesterDlg::OnBnClickedButtonOpencom()
@@ -247,7 +252,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonOpencom()
 
 		m_mscomm.put_PortOpen(TRUE);
 		if(m_mscomm.get_PortOpen()){
-			MessageBox(_T("Open Com success!"));
+			MessageBox(_T("Success!"));
 			m_openCom.SetWindowTextW(_T("CloseCom"));
 		}
 
@@ -258,7 +263,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonOpencom()
 		if(!m_mscomm.get_PortOpen()){
 		m_openCom.SetWindowTextW(_T("OpenCom"));
 		}
-	}
+	}  
 }
 
 
@@ -270,5 +275,184 @@ int CRFBeeTesterDlg::UserInitial(void)
 	m_comNum.SetCurSel(0);
 	m_baudRate.SetCurSel(0);
 	
+	m_threshold = -50;
+	CWnd::UpdateData(FALSE);
+	
+	//SetTimer(TIMER1,1,0);
+
 	return 0;
+}
+
+
+void CRFBeeTesterDlg::OnBnClickedButtonSetthreshold()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CWnd::UpdateData(TRUE);
+	//CString str;
+	//str.Format(_T("%d\n"),m_threshold);
+	//MessageBox((LPCTSTR)str);
+}
+
+
+void CRFBeeTesterDlg::OnBnClickedButtonTestCF0()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if(!sendCommand(_T("+++"))) return;
+	if(!sendCommand(_T("ATRS\r"))) return;
+	if(!sendCommand(_T("ATCF0\r"))) return;
+	if(!sendCommand(_T("ATOF3\r"))) return;
+	if(!sendCommand(_T("ATO0\r"))) return;
+	sendData(_T("hello 1234567890 ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+	checkReplyFromRemote();
+	if(!sendCommand(_T("+++"))) return;
+	if(!sendCommand(_T("ATRS\r"))) return;
+	if(!sendCommand(_T("ATO0\r"))) return;
+}
+
+
+// Send AT command to RFBee
+int CRFBeeTesterDlg::sendCommand(CString cmd)
+{
+	int retVal = 0;
+
+	m_serialReceiveData.Empty();//clear serial data
+	m_mscomm.put_InBufferCount(0);//clear serial input buffer
+
+	m_mscomm.put_Output(COleVariant(cmd));//send command 
+
+	//Delay(100);//wait 100ms for reply from RFBee
+	//while(m_serialReceiveData.GetLength() < 2);
+	SleepEx(20);//time here is critical
+
+	if(m_serialReceiveData.Left(2) == _T("ok")){
+		retVal = 1;
+	}
+	else{
+		retVal = 0;
+		CString msg(_T("Send "));
+		msg += cmd;
+		msg += CString(_T(" command error!"));
+		MessageBox(msg);
+	}
+	
+	m_serialReceiveData.Empty();//clear serial data
+	m_mscomm.put_InBufferCount(0);//clear serial input buffer
+
+	SleepEx(50);
+	return retVal;
+}
+
+
+// Send data to Remote RFBee through local RFbee
+int CRFBeeTesterDlg::sendData(CString data)
+{
+	return 0;
+}
+
+
+// Check if there's reply from remote RFBee, and determine the communication quality
+int CRFBeeTesterDlg::checkReplyFromRemote(void)
+{
+	return 0;
+}
+
+
+// Display received data on the window.
+int CRFBeeTesterDlg::DisplayReceivedData(CString data)
+{
+
+	int textLen = m_displayReceiveData.GetWindowTextLength();
+
+	m_displayReceiveData.SetSel(textLen,textLen);
+	m_displayReceiveData.ReplaceSel(data);
+
+
+	return 0;
+}
+
+//Clear displaying window
+void CRFBeeTesterDlg::OnBnClickedButtonClearReceiveData()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_displayReceiveData.SetSel(0,-1);
+	m_displayReceiveData.Clear();
+}
+
+
+void CRFBeeTesterDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	switch(nIDEvent) {
+    case TIMER1:
+        {    
+            m_isTimeElapsed = 1;
+			//Delay(0);
+            break;
+        }
+    default:
+        break;
+    }
+	CDialogEx::OnTimer(nIDEvent);
+}
+
+
+void CRFBeeTesterDlg::OnBnClickedOk()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	KillTimer(TIMER1);
+	CDialogEx::OnOK();
+}
+
+
+// Delay in millisecond
+int CRFBeeTesterDlg::Delay(int millisecond)
+{
+	/*if( 0 == m_isTimeElapsed){
+		SetTimer(TIMER1,millisecond,0);
+		return 0;
+	}
+
+	m_isTimeElapsed = 0;
+
+	KillTimer(TIMER1);
+	*/
+	long time = 0;
+	for(int i = 0; i < millisecond; i++){
+		for(int j = 0; j < 10000;j++){
+			for(int k = 0; k < 10000;k++){
+				time++;
+			}
+		}
+	}
+
+	return 0;
+}
+
+
+void CRFBeeTesterDlg::SleepEx(int value)
+{
+	 LARGE_INTEGER  litmp; 
+ LONGLONG       QPart1,QPart2;
+ double         dfMinus, dfFreq, dfTim; 
+  QueryPerformanceFrequency(&litmp); 
+  dfFreq = (double)litmp.QuadPart; // 获得计数器的时钟频率
+  QueryPerformanceCounter(&litmp);
+ 
+ QPart1 = litmp.QuadPart;
+
+
+ do{
+
+   //增加消息处理 删除则在此期间不响应任何消息
+   MSG  msg;  
+   GetMessage(&msg,NULL,0,0);  
+   TranslateMessage(&msg); 
+   DispatchMessage(&msg); 
+
+
+  QueryPerformanceCounter(&litmp); 
+  QPart2 = litmp.QuadPart;
+  dfMinus = (double)(QPart2-QPart1); 
+  dfTim = dfMinus / dfFreq;
+ }while(dfTim<0.001*1000/value);
 }
