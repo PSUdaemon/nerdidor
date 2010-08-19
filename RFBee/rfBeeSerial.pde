@@ -3,7 +3,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: July 16, 2010
+//  Version: August 18, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -356,9 +356,6 @@ int setRFBeeMode(){
   // CCx_MCSM1 is configured to have TX and RX return to proper state on completion or timeout
   switch (Config.get(CONFIG_RFBEE_MODE))
   {
-  case IDLE_MODE:
-    CCx.Strobe(CCx_SIDLE);
-    break;
   case TRANSMIT_MODE:
     CCx.Strobe(CCx_SIDLE);
     delay(1);

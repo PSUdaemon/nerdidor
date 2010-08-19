@@ -98,13 +98,13 @@ static AT_Command_t atCommands[] PROGMEM =
   { AC_label, CONFIG_ADDR_CHECK, 1 , 2, true, setAddressCheck }, // address check option  (0: no, 1: address check , 2: address check and 0 broadcast )
 // RF
   { PA_label, CONFIG_PAINDEX, 1 , 7, true, setPowerAmplifier },  // Power amplifier           (0: -30 , 1: -20 , 2: -15 , 3: -10 , 4: 0 , 5: 5 , 6: 7 , 7: 10 )
-  { CF_label, CONFIG_CONFIG_ID, 1 , 5, true, setCCxConfig },     // select CCx configuration  (0: 915 Mhz - 76.8k, 1: 915 Mhz - 1.2k, 2: 868 Mhz - 76.8k, 3: 868 Mhz - 1.2k, 4: 433 Mhz)
+  { CF_label, CONFIG_CONFIG_ID, 1 , 5, true, setCCxConfig },     // select CCx configuration  (0: 915 Mhz - 76.8k, 1: 915 Mhz - 4.8k sensitivity, 2: 915 Mhz - 4.8k low current, 3: 868 Mhz - 76.8k, 4: 868 Mhz - 4.8k sensitivity, 5: 868 Mhz - 4.8k low current )
 // Serial
   { BD_label, CONFIG_BDINDEX, 1 , 3, true, changeUartBaudRate },  // Uart baudrate                    (0: 9600 , 1:19200, 2:38400 ,3:115200)
   { TH_label, CONFIG_TX_THRESHOLD, 2 , 32, false, 0 },            // TH- threshold of transmitting    (0~32) 
   { OF_label, CONFIG_OUTPUT_FORMAT, 1 , 3 , false, 0 },           // Output Format                    (0: payload only, 1: source, dest, payload ,  2: payload len, source, dest, payload, rssi, lqi, 3: same as 2, but all except for payload as decimal and separated by comma's )
 // Mode 
-  { MD_label, CONFIG_RFBEE_MODE, 1 , 4 , true, setRFBeeMode},    // CCx Working mode                 (0:idle , 1:transmit , 2:receive, 3:transceive,4:lowpower)
+  { MD_label, CONFIG_RFBEE_MODE, 1 , 3 , true, setRFBeeMode},    // CCx Working mode                 (0:transceive , 1:transmit , 2:receive, 3:lowpower)
   { O0_label, 0, 0 , 0 , true, setSerialDataMode },              // thats o+ zero, go back to online mode
   { SL_label, 0, 0 , 0 , true, setSleepMode },                   // put the rfBee to sleep
 // Diagnostics:
@@ -135,12 +135,10 @@ long baudRateTable[] PROGMEM= {9600,19200,38400,115200};
 
 // operating modes, used by ATMD
 
-#define IDLE_MODE 0
+#define TRANSCEIVE_MODE 0
 #define TRANSMIT_MODE 1     
 #define RECEIVE_MODE 2 
-#define TRANSCEIVE_MODE 3
-#define LOWPOWER_MODE 4
-#define SLEEP_MODE 5  
+#define LOWPOWER_MODE 3
 
 #ifdef INTERRUPT_RECEIVE
 volatile enum state
