@@ -58,13 +58,18 @@ void CRFBeeTesterDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_MSCOMM1, m_mscomm);
+	DDX_Control(pDX, IDC_COMBO_COMNUM, m_comNum);
+	DDX_Control(pDX, IDC_COMBO_BAUDRATE, m_baudRate);
+	DDX_Control(pDX, IDC_BUTTON_OPENCOM, m_openCom);
 }
 
 BEGIN_MESSAGE_MAP(CRFBeeTesterDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BUTTON1, &CRFBeeTesterDlg::OnBnClickedButton1)
+	//ON_BN_CLICKED(IDC_BUTTON1, &CRFBeeTesterDlg::OnBnClickedButton1)
+	//ON_BN_CLICKED(IDC_BUTTON2, &CRFBeeTesterDlg::OnBnClickedButton2)
+	ON_BN_CLICKED(IDC_BUTTON_OPENCOM, &CRFBeeTesterDlg::OnBnClickedButtonOpencom)
 END_MESSAGE_MAP()
 
 
@@ -100,6 +105,8 @@ BOOL CRFBeeTesterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	UserInitial();
+	
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -155,30 +162,30 @@ HCURSOR CRFBeeTesterDlg::OnQueryDragIcon()
 
 
 
-void CRFBeeTesterDlg::OnBnClickedButton1()
-{
-	// TODO: 在此添加控件通知处理程序代码
-	m_mscomm.put_CommPort(2);//选择COM?
-	
-	m_mscomm.put_InBufferSize(1024); //设置输入缓冲区的大小，Bytes
-
-	m_mscomm.put_OutBufferSize(512); //设置输入缓冲区的大小，Bytes//
-
-
-	m_mscomm.put_InputMode(0); //设置输入方式为1-二进制方式,0-文本方式
-
-	m_mscomm.put_Settings(_T("9600,n,8,1")); //设置波特率等参数
-
-
-
-	m_mscomm.put_RThreshold(1); //为1表示有一个字符引发一个事件
-
-	m_mscomm.put_InputLen(100);
-
-	if(!m_mscomm.get_PortOpen()){ //打开串口
-		m_mscomm.put_PortOpen(TRUE);
-	}
-}
+//void CRFBeeTesterDlg::OnBnClickedButton1()
+//{
+//	// TODO: 在此添加控件通知处理程序代码
+//	m_mscomm.put_CommPort(2);//选择COM?
+//	
+//	m_mscomm.put_InBufferSize(1024); //设置输入缓冲区的大小，Bytes
+//
+//	m_mscomm.put_OutBufferSize(512); //设置输入缓冲区的大小，Bytes//
+//
+//
+//	m_mscomm.put_InputMode(0); //设置输入方式为1-二进制方式,0-文本方式
+//
+//	m_mscomm.put_Settings(_T("9600,n,8,1")); //设置波特率等参数
+//
+//
+//
+//	m_mscomm.put_RThreshold(1); //为1表示有一个字符引发一个事件
+//
+//	m_mscomm.put_InputLen(100);
+//
+//	if(!m_mscomm.get_PortOpen()){ //打开串口
+//		m_mscomm.put_PortOpen(TRUE);
+//	}
+//}
 
 
 BEGIN_EVENTSINK_MAP(CRFBeeTesterDlg, CDialogEx)
@@ -199,4 +206,69 @@ void CRFBeeTesterDlg::OnCommMscomm1()
 	default:
 		break;
 	}
+}
+
+
+//void CRFBeeTesterDlg::OnBnClickedButton2()
+//{
+//	// TODO: 在此添加控件通知处理程序代码
+//	CString str("hello world\r\n");
+//	m_mscomm.put_Output(COleVariant(str));
+//}
+
+
+void CRFBeeTesterDlg::OnBnClickedButtonOpencom()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	if(!m_mscomm.get_PortOpen()){ //打开串口
+		m_mscomm.put_InBufferSize(1024); //设置输入缓冲区的大小，Bytes
+
+		m_mscomm.put_OutBufferSize(512); //设置输入缓冲区的大小，Bytes//
+
+
+		m_mscomm.put_InputMode(0); //设置输入方式为1-二进制方式,0-文本方式
+
+
+		m_mscomm.put_RThreshold(1); //为1表示有一个字符引发一个事件
+
+		m_mscomm.put_InputLen(100);
+
+
+		//set COM number
+		int index = m_comNum.GetCurSel();
+		m_mscomm.put_CommPort(index+1);
+
+		//set baudrate
+		index = m_baudRate.GetCurSel();
+		CString baudParam[] = {_T("9600,n,8,1"),_T("19200,n,8,1"),_T("38400,n,8,1"),_T("115200,n,8,1")};
+
+		m_mscomm.put_Settings(baudParam[index]); //设置波特率等参数
+
+		m_mscomm.put_PortOpen(TRUE);
+		if(m_mscomm.get_PortOpen()){
+			MessageBox(_T("Open Com success!"));
+			m_openCom.SetWindowTextW(_T("CloseCom"));
+		}
+
+	}
+	else
+	{
+		m_mscomm.put_PortOpen(FALSE);
+		if(!m_mscomm.get_PortOpen()){
+		m_openCom.SetWindowTextW(_T("OpenCom"));
+		}
+	}
+}
+
+
+// Do some intialization
+int CRFBeeTesterDlg::UserInitial(void)
+{
+	m_openCom.SetWindowTextW(_T("OpenCom"));
+
+	m_comNum.SetCurSel(0);
+	m_baudRate.SetCurSel(0);
+	
+	return 0;
 }

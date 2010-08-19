@@ -4,6 +4,7 @@
 
 #pragma once
 #include "mscomm1.h"
+#include "afxwin.h"
 
 
 // CRFBeeTesterDlg ¶Ô»°¿ò
@@ -32,7 +33,14 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CMscomm1 m_mscomm;
-	afx_msg void OnBnClickedButton1();
+	//afx_msg void OnBnClickedButton1();
 	DECLARE_EVENTSINK_MAP()
 	void OnCommMscomm1();
+	//afx_msg void OnBnClickedButton2();
+	CComboBox m_comNum;
+	CComboBox m_baudRate;
+	afx_msg void OnBnClickedButtonOpencom();
+	CButton m_openCom;
+	// Do some intialization
+	int UserInitial(void);
 };
