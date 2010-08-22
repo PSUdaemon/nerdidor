@@ -18,7 +18,7 @@
 
 
 #define FIRMWAREVERSION 11 // 1.1  , version number needs to fit in byte (0~255) to be able to store it into config
-#define FACTORY_SELFTEST
+//#define FACTORY_SELFTEST
 //#define DEBUG 
 
 
@@ -69,9 +69,9 @@ void loop(){
   
   // check if we can go to sleep again, going into low power too early will result in lost data in the CCx fifo.
   if ((sleepCounter == 0) && (Config.get(CONFIG_RFBEE_MODE) == LOWPOWER_MODE))
-    Serial.println("low power on");
+    DEBUGPRINT("low power on")
     lowPowerOn();
-    Serial.println("wake up");
+    DEBUGPRINT("woke up")
 }
 
 

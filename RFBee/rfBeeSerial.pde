@@ -388,12 +388,12 @@ int setRFBeeMode(){
 
 // put the rfbee into sleep
 int setSleepMode(){
-  Serial.println("going to sleep");
+  DEBUGPRINT("going to sleep")
   CCx.Strobe(CCx_SIDLE);
   CCx.Strobe(CCx_SPWD);
   sleepNow(SLEEP_MODE_IDLE);
   //sleepNow(SLEEP_MODE_PWR_DOWN);
-  Serial.println("just woke up");
+  DEBUGPRINT("just woke up")
   setRFBeeMode();
   setSerialDataMode();
   return NOTHING;
