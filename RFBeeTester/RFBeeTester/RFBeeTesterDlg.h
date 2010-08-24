@@ -8,7 +8,14 @@
 
 #define TIMER1  1
 #define TIMER2  2
-#define TIMER3  3
+
+#define TIMER_CF0  3
+#define TIMER_CF1  4
+#define TIMER_CF3  5
+#define TIMER_CF4  6
+
+#define TIMER_CLOSE_COM  7
+#define TIMER_OPEN_COM   8
 
 // CRFBeeTesterDlg ¶Ô»°¿ò
 class CRFBeeTesterDlg : public CDialogEx
@@ -97,4 +104,6 @@ public:
 	afx_msg void OnBnClickedButtonTestCF4();
 	afx_msg void OnBnClickedButtonTestCF2();
 	afx_msg void OnBnClickedButtonTestCF5();
+	int Timer1Process(void);
+	int Timer2Process(void);
 };

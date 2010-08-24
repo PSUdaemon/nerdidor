@@ -271,8 +271,9 @@ void CRFBeeTesterDlg::OnBnClickedButtonOpencom()
 
 		m_mscomm.put_PortOpen(TRUE);
 		if(m_mscomm.get_PortOpen()){
-			MessageBox(_T("Success!"));
+			//MessageBox(_T("Success!"));
 			m_openCom.SetWindowTextW(_T("CloseCom"));
+			SetTimer(TIMER_OPEN_COM,200,0);
 		}
 
 	}
@@ -282,6 +283,13 @@ void CRFBeeTesterDlg::OnBnClickedButtonOpencom()
 		if(!m_mscomm.get_PortOpen()){
 		m_openCom.SetWindowTextW(_T("OpenCom"));
 		KillTimer(TIMER1);
+		KillTimer(TIMER2);
+		KillTimer(TIMER_CF0);
+		KillTimer(TIMER_CF1);
+		KillTimer(TIMER_CF3);
+		KillTimer(TIMER_CF4);
+		KillTimer(TIMER_CLOSE_COM);
+		KillTimer(TIMER_OPEN_COM);
 		}
 	}  
 }
@@ -371,11 +379,16 @@ int CRFBeeTesterDlg::checkReplyFromRemote(int &CFRSSI, CString &CFState)
 		return 1;
 	}
 	
-
+	int start = m_serialReceiveData.Find(_T(","));
+	if(start < 1)
+	{
+		return 1;
+	}
 	//get the raw length of the first pack, format:len,srcAddr,dstAddr,rawData,RSSI,LQI
-	CString tempStr(m_serialReceiveData.Left(1));
+	CString tempStr(m_serialReceiveData.Right(dataLen - start +2));
 	LPTSTR p = tempStr.GetBuffer(tempStr.GetLength());
 	int len	= atoi((char *)p);
+
 	if(len < 1){
 		m_serialReceiveData.Empty();//clear serial data
 		m_mscomm.put_InBufferCount(0);//clear serial input buffer
@@ -383,7 +396,7 @@ int CRFBeeTesterDlg::checkReplyFromRemote(int &CFRSSI, CString &CFState)
 		return 1;
 	}
 
-	tempStr = m_serialReceiveData.Mid((len+3)*2,3);//1,0,0,c,-29
+	tempStr = m_serialReceiveData.Mid(start - 1 + (len+3)*2,3);//1,0,0,c,-29
 	
 	//((CEdit*)GetDlgItem(IDC_EDIT_CF0VALUE))->SetWindowText(tempStr); 
 
@@ -441,72 +454,66 @@ void CRFBeeTesterDlg::OnTimer(UINT_PTR nIDEvent)
 	switch(nIDEvent) {
     case TIMER1:
         {    
-			switch(m_CFState){
-			case 0:
-				if(checkReplyFromRemote(m_CF0RSSI,m_CF0State)){
-					sendData(_T("CF0"));
-					return;
-				}
-
-				KillTimer(TIMER1);
-				break;
-			case 1:
-				if(checkReplyFromRemote(m_CF1RSSI,m_CF1State)){
-					sendData(_T("CF1"));
-					return;
-				}
-
-				KillTimer(TIMER1);
-				break;
-			case 2:
-				if(checkReplyFromRemote(m_CF2RSSI,m_CF2State)){
-					sendData(_T("CF2"));
-					return;
-				}
-
-				KillTimer(TIMER1);
-				break;
-			case 3:
-				if(checkReplyFromRemote(m_CF3RSSI,m_CF3State)){
-					sendData(_T("CF3"));
-					return;
-				}
-
-				KillTimer(TIMER1);
-				break;
-			case 4:
-				if(checkReplyFromRemote(m_CF4RSSI,m_CF4State)){
-					sendData(_T("CF4"));
-					return;
-				}
-
-				KillTimer(TIMER1);
-				break;
-			case 5:
-				if(checkReplyFromRemote(m_CF5RSSI,m_CF5State)){
-					sendData(_T("CF5"));
-					return;
-				}
-
-				KillTimer(TIMER1);
-				break;
-			default:
-				break;
-			}
+			Timer1Process();
+			break;
         }
 	case TIMER2:
         {    
-			KillTimer(TIMER2);
-			m_serialReceiveData.Empty();//clear serial data
-			m_mscomm.put_InBufferCount(0);//clear serial input buffer
-
-			CString data;
-			data.Format(_T("CF%d"),m_CFState);
-			sendData(data);
-			SetTimer(TIMER1,200,0);
-			
+			Timer2Process();
             break;
         }
+	case TIMER_CF0:
+		{
+			KillTimer(TIMER_CF0);
+			OnBnClickedButtonTestCF0();
+			SetTimer(TIMER_CF1,500,0);
+			break;
+		}
+	case TIMER_CF1:
+		{
+			KillTimer(TIMER_CF1);
+			OnBnClickedButtonTestCF1();
+			SetTimer(TIMER_CF3,500,0);
+			break;
+		}
+	case TIMER_CF3:
+		{
+			KillTimer(TIMER_CF3);
+			OnBnClickedButtonTestCF3();
+			SetTimer(TIMER_CF4,500,0);
+			break;
+		}
+	case TIMER_CF4:
+		{
+			KillTimer(TIMER_CF4);
+			OnBnClickedButtonTestCF4();
+			SetTimer(TIMER_CLOSE_COM,500,0);
+			break;
+		}
+	case TIMER_CLOSE_COM:
+		{
+			KillTimer(TIMER_CLOSE_COM);
+			if(m_mscomm.get_PortOpen()){
+				m_mscomm.put_PortOpen(FALSE);
+				if(!m_mscomm.get_PortOpen()){
+					m_openCom.SetWindowTextW(_T("OpenCom"));
+					KillTimer(TIMER1);
+					KillTimer(TIMER2);
+					KillTimer(TIMER_CF0);
+					KillTimer(TIMER_CF1);
+					KillTimer(TIMER_CF3);
+					KillTimer(TIMER_CF4);
+					KillTimer(TIMER_CLOSE_COM);
+				}
+				break;
+			}
+		}
+	case TIMER_OPEN_COM:
+		{
+			KillTimer(TIMER_OPEN_COM);
+			OnBnClickedButtonTestAll();
+			break;
+		}
     default:
         break;
     }
@@ -579,20 +586,31 @@ void CRFBeeTesterDlg::SleepEx(int value)
 void CRFBeeTesterDlg::OnBnClickedButtonTestAll()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	if(sendCommand(_T("+++"))) return;
-	if(sendCommand(_T("ATRS\r"))) return;
-	if(sendCommand(_T("ATOF3\r"))) return;
-	if(sendCommand(_T("ATO0\r"))) return;
+	m_CF0RSSI = 0;
+	m_CF1RSSI = 0;
+	m_CF2RSSI = 0;
+	m_CF3RSSI = 0;
+	m_CF4RSSI = 0;
+	m_CF5RSSI = 0;
 
-	sendData(_T("CF0"));
-	m_CFState = 0;
-	SetTimer(TIMER1,1000,0);
+	m_CF0State = (_T(""));
+	m_CF1State = (_T(""));
+	m_CF2State = (_T(""));
+	m_CF3State = (_T(""));
+	m_CF4State = (_T(""));
+	m_CF5State = (_T(""));
+
+	configRFBee(_T("ATRS\r"));
+	
+	SetTimer(TIMER_CF0,100,0);
 	
 }
 
 int CRFBeeTesterDlg::configRFBee(CString cfg)
 {
-	
+	m_serialReceiveData.Empty();//clear serial data
+	m_mscomm.put_InBufferCount(0);//clear serial input buffer
+
 	m_mscomm.put_Output(COleVariant(_T("+++")));
 	m_mscomm.put_Output(COleVariant(cfg));
 	m_mscomm.put_Output(COleVariant(_T("ATO0\r")));
@@ -608,7 +626,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonTestCF0()
 	configRFBee(_T("ATCF0\r"));
 
 	m_CFState = 0;
-	SetTimer(TIMER2,100,0);
+	SetTimer(TIMER2,150,0);
 
 	
 	//checkReplyFromRemote();
@@ -625,7 +643,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonTestCF1()
 	configRFBee(_T("ATCF1\r"));
 
 	m_CFState = 1;
-	SetTimer(TIMER2,200,0);
+	SetTimer(TIMER2,150,0);
 }
 
 void CRFBeeTesterDlg::OnBnClickedButtonTestCF2()
@@ -635,7 +653,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonTestCF2()
 	configRFBee(_T("ATCF2\r"));
 
 	m_CFState = 2;
-	SetTimer(TIMER2,200,0);
+	SetTimer(TIMER2,150,0);
 }
 
 void CRFBeeTesterDlg::OnBnClickedButtonTestCF3()
@@ -645,7 +663,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonTestCF3()
 	configRFBee(_T("ATCF3\r"));
 
 	m_CFState = 3;
-	SetTimer(TIMER2,200,0);
+	SetTimer(TIMER2,150,0);
 
 }
 
@@ -657,7 +675,7 @@ void CRFBeeTesterDlg::OnBnClickedButtonTestCF4()
 	configRFBee(_T("ATCF4\r"));
 
 	m_CFState = 4;
-	SetTimer(TIMER2,200,0);
+	SetTimer(TIMER2,150,0);
 }
 
 
@@ -668,5 +686,77 @@ void CRFBeeTesterDlg::OnBnClickedButtonTestCF5()
 	configRFBee(_T("ATCF5\r"));
 
 	m_CFState = 5;
-	SetTimer(TIMER2,200,0);
+	SetTimer(TIMER2,150,0);
+}
+
+
+int CRFBeeTesterDlg::Timer1Process(void)
+{
+	switch(m_CFState){
+	case 0:
+		if(checkReplyFromRemote(m_CF0RSSI,m_CF0State)){
+			sendData(_T("CF0"));
+			return 0;
+		}
+
+		KillTimer(TIMER1);
+		break;
+	case 1:
+		if(checkReplyFromRemote(m_CF1RSSI,m_CF1State)){
+			sendData(_T("CF1"));
+			return 0;
+		}
+
+		KillTimer(TIMER1);
+		break;
+	case 2:
+		if(checkReplyFromRemote(m_CF2RSSI,m_CF2State)){
+			sendData(_T("CF2"));
+			return 0;
+		}
+
+		KillTimer(TIMER1);
+		break;
+	case 3:
+		if(checkReplyFromRemote(m_CF3RSSI,m_CF3State)){
+			sendData(_T("CF3"));
+			return 0;
+		}
+
+		KillTimer(TIMER1);
+		break;
+	case 4:
+		if(checkReplyFromRemote(m_CF4RSSI,m_CF4State)){
+			sendData(_T("CF4"));
+			return 0;
+		}
+
+		KillTimer(TIMER1);
+		break;
+	case 5:
+		if(checkReplyFromRemote(m_CF5RSSI,m_CF5State)){
+			sendData(_T("CF5"));
+			return 0;
+		}
+		configRFBee(_T("ATRS\r"));
+		KillTimer(TIMER1);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+
+int CRFBeeTesterDlg::Timer2Process(void)
+{
+	KillTimer(TIMER2);
+	m_serialReceiveData.Empty();//clear serial data
+	m_mscomm.put_InBufferCount(0);//clear serial input buffer
+
+	CString data;
+	data.Format(_T("CF%d"),m_CFState);
+	sendData(data);
+	SetTimer(TIMER1,250,0);
+	return 0;
 }
