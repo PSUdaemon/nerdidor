@@ -7,6 +7,8 @@
 #include "afxwin.h"
 
 #define TIMER1  1
+#define TIMER2  2
+#define TIMER3  3
 
 // CRFBeeTesterDlg ¶Ô»°¿ò
 class CRFBeeTesterDlg : public CDialogEx
@@ -48,16 +50,23 @@ public:
 	afx_msg void OnBnClickedButtonSetthreshold();
 	// RSSI in 915MHz 76.8kbps
 	int m_CF0RSSI;
-	// RSSI in 915MHz 4.8kbps
+	// RSSI in 915MHz 4.8kbps sensitivity
 	int m_CF1RSSI;
-	// RSSI in 868MHz 76.8kbps
+	// RSSI in 915MHz 4.8kbps low current
 	int m_CF2RSSI;
-	// RSSI in 868MHz 4.8kbps
+	// RSSI in 868MHz 76.8kbps
 	int m_CF3RSSI;
+	// RSSI in 868MHz 4.8kbps sensitivity
+	int m_CF4RSSI;
+	// RSSI in 868MHz 4.8kbps low current
+	int m_CF5RSSI;
 	CString m_CF0State;
 	CString m_CF1State;
 	CString m_CF2State;
 	CString m_CF3State;
+	CString m_CF4State;
+	CString m_CF5State;
+
 	CString m_allState;
 	afx_msg void OnBnClickedButtonTestCF0();
 	// Send AT command to RFBee
@@ -65,7 +74,7 @@ public:
 	// Send data to Remote RFBee through local RFbee
 	int sendData(CString data);
 	// Check if there's reply from remote RFBee, and determine the communication quality
-	int checkReplyFromRemote(void);
+	int checkReplyFromRemote(int &CFRSSI, CString &CFState);
 	// Data recieved in serial buffer
 	CString m_serialReceiveData;
 	// Data received needs to be displayed 
@@ -80,4 +89,12 @@ public:
 	// Delay in millisecond
 	int Delay(int millisecond);
 	void SleepEx(int value);
+	afx_msg void OnBnClickedButtonTestAll();
+	int m_CFState;
+	int configRFBee(CString cfg);
+	afx_msg void OnBnClickedButtonTestCF1();
+	afx_msg void OnBnClickedButtonTestCF3();
+	afx_msg void OnBnClickedButtonTestCF4();
+	afx_msg void OnBnClickedButtonTestCF2();
+	afx_msg void OnBnClickedButtonTestCF5();
 };
