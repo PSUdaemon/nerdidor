@@ -2,7 +2,7 @@
 // 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: August 18, 2010
+//  Version: August 27, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -171,7 +171,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x23,   // FREQ2     Frequency control word, high byte.
     0x31,   // FREQ1     Frequency control word, middle byte.
     0x3B,   // FREQ0     Frequency control word, low byte.
-    0xC7,   // MDMCFG4   Modem configuration.
+    0xB7,   //0xC7 MDMCFG4   Modem configuration.
     0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
@@ -237,7 +237,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x23,   // FREQ2     Frequency control word, high byte.
     0x31,   // FREQ1     Frequency control word, middle byte.
     0x3B,   // FREQ0     Frequency control word, low byte.
-    0xC7,   // MDMCFG4   Modem configuration.
+    0xB7,   // MDMCFG4   Modem configuration.
     0x83,   // MDMCFG3   Modem configuration.
     0x93,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
@@ -302,8 +302,8 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x23,   // FREQ2     Frequency control word, high byte.
     0x31,   // FREQ1     Frequency control word, middle byte.
     0x3B,   // FREQ0     Frequency control word, low byte.
-    0xC8,   // MDMCFG4   Modem configuration.
-    0x93,   // MDMCFG3   Modem configuration.
+    0x7B,   // MDMCFG4   Modem configuration.
+    0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
     0xF8,   // MDMCFG0   Modem configuration.
@@ -368,7 +368,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x21,   // FREQ2     Frequency control word, high byte.
     0x65,   // FREQ1     Frequency control word, middle byte.
     0x6A,   // FREQ0     Frequency control word, low byte.
-    0xC7,   // MDMCFG4   Modem configuration.
+    0xB7,   // MDMCFG4   Modem configuration.
     0x83,   // MDMCFG3   Modem configuration.
     0x13,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
@@ -434,7 +434,7 @@ static const byte CCx_registerSettings[CCX_NR_OF_CONFIGS][CCX_NR_OF_REGISTERS] P
     0x21,   // FREQ2     Frequency control word, high byte.
     0x62,   // FREQ1     Frequency control word, middle byte.
     0x76,   // FREQ0     Frequency control word, low byte.
-    0xC7,   // MDMCFG4   Modem configuration.
+    0xB7,   // MDMCFG4   Modem configuration.
     0x83,   // MDMCFG3   Modem configuration.
     0x93,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.

@@ -2,7 +2,7 @@
 
 //  Copyright (c) 2010 Hans Klunder <hans.klunder (at) bigfoot.com>
 //  Author: Hans Klunder, based on the original Rfbee v1.0 firmware by Seeedstudio
-//  Version: June 18, 2010
+//  Version: Aug 27, 2010
 //
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@
 #define CONFIG_OUTPUT_FORMAT     10 // output format to use
 #define CONFIG_RFBEE_MODE        11 // rfBee operating mode (e.g. transmit/receive/idle)
 // marker
-#define CONFIG_RFBEE_MARKER_VALUE 0xAB
+#define CONFIG_RFBEE_MARKER_VALUE 0xAA
 
 class CONFIG
 {
