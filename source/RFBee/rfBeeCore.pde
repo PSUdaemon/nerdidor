@@ -156,8 +156,3 @@ void lowPowerOn(){
   sleepNow(SLEEP_MODE_IDLE);
   //CCx.Strobe(CCx_SIDLE);
 }
-
-
-
-
-

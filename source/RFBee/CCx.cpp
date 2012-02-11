@@ -220,4 +220,3 @@ byte CCX::RSSIdecode(byte rssiEnc){
 //---------- preinstantiate CCx object --------------------------------------
 
 CCX CCx = CCX();
-

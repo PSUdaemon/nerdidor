@@ -15,8 +15,6 @@
 //  You should have received a copy of the GNU General Public License along with this program; 
 //  if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-
-
 #define FIRMWAREVERSION 11 // 1.1  , version number needs to fit in byte (0~255) to be able to store it into config
 //#define FACTORY_SELFTEST
 //#define DEBUG 
@@ -95,5 +93,3 @@ void ISRVreceiveData(){
   //DEBUGPRINT()
   sleepCounter=10;
 }
-
-

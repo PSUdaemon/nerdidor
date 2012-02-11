@@ -2,7 +2,6 @@
 // optimized for least RAM usage
 #include "TestIO.h"
 
-
 #define numPins 5
 
 #define IO_PD_4 4
@@ -20,11 +19,9 @@
 #define IO_PC_0 14
 #define IO_PC_2 16
 
-
 #define IO_PC_1 15
 #define IO_ADC_7 7
 #define IO_PC_3 17
-
 
 int TestIoPins(){
   byte pin[numPins*2]={ 

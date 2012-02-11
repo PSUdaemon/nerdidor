@@ -19,7 +19,6 @@
 //  License along with this library; if not, write to the Free Software
 //  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-
 #ifndef RFBEECORE_H
 #define RFBEECORE_H 1
 
@@ -28,6 +27,5 @@
 #include "CCx.h"
 #include <avr/power.h>
 #include <avr/sleep.h>
-
 
 #endif
