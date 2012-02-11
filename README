@@ -1,0 +1,13 @@
+The Nerdidor is an Arduino based wireless temperature and humidity sensor for a humidor.
+
+It is based on RFBee code.
+
+Here are links to the hardware used:
+
+http://www.seeedstudio.com/wiki/RFbee_V1.1_-_Wireless_Arduino_compatible_node
+
+http://www.seeedstudio.com/wiki/index.php?title=Bee_Stem
+
+http://www.seeedstudio.com/wiki/Grove_-_Temperature_and_Humidity_Sensor_Pro
+
+The Bee Stem is basically a breakout for the RFBee. All code resides on the RFBee. I am currently using a Grove T&H sensor which fits nicely into the Bee Stem.
